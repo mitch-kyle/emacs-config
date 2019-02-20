@@ -1,0 +1,7 @@
+*~
+*.elc
+auto-save-list
+projectile-bookmarks.eld
+straight
+var
+eshell
