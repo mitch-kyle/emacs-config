@@ -29,30 +29,34 @@
     "The Git version of org-mode.
 Inserted by installing org-mode or when a release is made."
     (let ((git-repo (expand-file-name "straight/repos/org/"
-              user-emacs-directory)))
+                                      user-emacs-directory)))
       (string-trim
-  (git-run "describe"
-     "--match=release\*"
-     "--abbrev=6"
-     "HEAD"))))
+       (git-run "describe"
+                "--match=release\*"
+                "--abbrev=6"
+                "HEAD"))))
 
   (defun org-release ()
     "The release version of org-mode.
 Inserted by installing org-mode or when a release is made."
     (let ((git-repo (expand-file-name "straight/repos/org/"
-              user-emacs-directory)))
+                                      user-emacs-directory)))
       (string-trim
- (string-remove-prefix
-  "release_"
-  (git-run "describe"
-     "--match=release\*"
-     "--abbrev=0"
-     "HEAD")))))
+       (string-remove-prefix
+        "release_"
+        (git-run "describe"
+                 "--match=release\*"
+                 "--abbrev=0"
+                 "HEAD")))))
 
   (provide 'org-version))
 
 (use-package org
   :mode ("\\.org\\'" . org-mode))
+
+(with-eval-after-load "org"
+  (use-package toc-org
+    :hook ((org-mode) . toc-org-mode)))
 
 (when (require 'org nil t)
   (defun mkyle/rebuild-init-file ()
@@ -82,7 +86,7 @@ Inserted by installing org-mode or when a release is made."
   (when (file-exists-p custom-file)
     (load custom-file t)))
 
-(use-package diminish)
+(use-package diminish :defer t)
 
 (use-package anzu
   :diminish anzu-mode
@@ -196,8 +200,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 (use-package exec-path-from-shell
   :config (exec-path-from-shell-initialize))
 
-(when (require 'ibuffer nil t)
-  (global-set-key (kbd "C-x C-b") 'ibuffer))
+(global-set-key (kbd "C-x C-b") 'ibuffer)
 
 (with-eval-after-load "ibuffer"
   (setq ibuffer-formats
@@ -225,7 +228,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                 (ibuffer-dynamic-groups t)))))
 
 (use-package ido
-  :config (progn
+  :config
+  (progn
     (setq ido-enable-prefix                      nil
           ido-enable-flex-matching               t
           ido-create-new-buffer                  'always
@@ -244,13 +248,13 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                      ;; disable ido faces to see flx highlights
                      (setq ido-use-faces nil)))))
 
-(when (require 'windmove nil t)
-  (global-set-key [s-left]  'windmove-left)
-  (global-set-key [s-right] 'windmove-right)
-  (global-set-key [s-up]    'windmove-up)
-  (global-set-key [s-down]  'windmove-down))
+(global-set-key [s-left]  'windmove-left)
+(global-set-key [s-right] 'windmove-right)
+(global-set-key [s-up]    'windmove-up)
+(global-set-key [s-down]  'windmove-down)
 
 (use-package projectile
+  :defer t
   :config (progn
             (projectile-mode t)
             (global-set-key (kbd "C-c p") projectile-command-map)))
@@ -258,36 +262,23 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 (with-eval-after-load "projectile"
   (with-eval-after-load "ibuffer-dynamic-groups"
     (use-package ibuffer-projectile
-      :config (progn
-    (setq ibuffer-projectile-prefix "- ")
-    (ibuffer-dynamic-groups-add (lambda (groups)
-                (append (ibuffer-projectile-generate-filter-groups)
-                  groups))
-              '((name . projectile-groups)
-                (depth . -50)))))))
+      :config
+      (progn
+        (setq ibuffer-projectile-prefix "- ")
+        (ibuffer-dynamic-groups-add
+         (lambda (groups)
+           (append (ibuffer-projectile-generate-filter-groups)
+                   groups))
+         '((name . projectile-groups)
+           (depth . -50)))))))
 
 (with-eval-after-load "tramp"
   (setq tramp-default-method "ssh"))
 
-(when (require 'recentf nil t)
-  (setq recentf-max-saved-items 500
-        recentf-max-menu-items 15
-        ;; disable recentf-cleanup on Emacs start, because it can cause
-        ;; problems with remote files
-        recentf-auto-cleanup 'never)
-
-  (defun mkyle/recentf-exclude-p (file)
-    "A predicate to decide whether to exclude FILE from recentf."
-    (string-prefix-p (file-truename no-littering-var-directory)
-   (file-truename (file-name-directory file))))
-
-  (add-to-list 'recentf-exclude 'mkyle/recentf-exclude-p)
-  (recentf-mode +1))
-
 (cua-mode t)
 
 (use-package rainbow-delimiters
-  :config (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
+  :hook ((prog-mode) . rainbow-delimiters-mode))
 
 (global-linum-mode t)
 
@@ -299,21 +290,21 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
               tab-width         4
               tab-always-indent 'complete)
 
-(require 'tabify nil t)
-
 (add-hook 'before-save-hook #'whitespace-cleanup)
 
 (use-package company
   :diminish company-mode
-  :config (progn (setq company-idle-delay 0.5
-           company-show-numbers t
-           company-tooltip-limit 10
-           company-minimum-prefix-length 2
-           company-tooltip-align-annotations t
-           ;; invert the navigation direction if the the completion popup-isearch-match
-           ;; is displayed on top (happens near the bottom of windows)
-           company-tooltip-flip-when-above t)
-     (global-company-mode 1)))
+  :config
+  (progn
+    (setq company-idle-delay 0.5
+          company-show-numbers t
+          company-tooltip-limit 10
+          company-minimum-prefix-length 2
+          company-tooltip-align-annotations t
+          ;; invert the navigation direction if the the completion popup-isearch-match
+          ;; is displayed on top (happens near the bottom of windows)
+          company-tooltip-flip-when-above t)
+    (global-company-mode 1)))
 
 (setq-default search-highlight t
               query-replace-highlight t)
@@ -322,8 +313,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 (set-face-foreground 'show-paren-match "DimGrey")
 
 (use-package rainbow-mode
-  :diminish rainbow-mode
-  :config (rainbow-mode t))
+  :defer t
+  :diminish rainbow-mode)
 
 (use-package monokai-theme
   :if window-system
@@ -355,7 +346,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :defer t
   :config (global-set-key (kbd "C-c m") 'magit-status))
 
-(use-package git-modes)
+(use-package git-modes
+  :defer t)
 
 (with-eval-after-load "ediff"
   ;; TODO this fails when ediff complains about a buffer already open for a file being merged
@@ -416,27 +408,28 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   (when (require 'erc-spelling nil t)
     (erc-spelling-mode 1)))
 
+(add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (with-eval-after-load "eldoc"
-  (diminish 'eldoc-mode)
-  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode))
+  (diminish 'eldoc-mode))
 
 (use-package auto-compile
-  :config (progn
-      (setq auto-compile-display-buffer    nil
-      auto-compile-mode-line-counter t)
-      (auto-compile-on-load-mode)
-      (auto-compile-on-save-mode)))
+  :config
+  (progn
+    (setq auto-compile-display-buffer    nil
+          auto-compile-mode-line-counter t)
+    (auto-compile-on-load-mode)
+    (auto-compile-on-save-mode)))
 
 (defun mkyle/elisp-recompile-elc-on-save ()
   "Recompile your elc when saving an elisp file."
   (add-hook 'after-save-hook
-      (lambda ()
-        (when (and (string-prefix-p user-emacs-directory
-            (file-truename buffer-file-name))
-       (file-exists-p (byte-compile-dest-file buffer-file-name)))
-    (emacs-lisp-byte-compile)))
-      nil
-      t))
+    (lambda ()
+      (when (and (string-prefix-p user-emacs-directory
+                                  (file-truename buffer-file-name))
+                 (file-exists-p (byte-compile-dest-file buffer-file-name)))
+        (emacs-lisp-byte-compile)))
+        nil
+        t))
 
 (add-hook 'emacs-lisp-mode-hook 'mkyle/elisp-recompile-elc-on-save)
 
@@ -451,6 +444,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :config (add-hook 'clojure-mode-hook 'subword-mode))
 
 (use-package cider
+  :defer t
   :config (progn
             (setq nrepl-log-messages t)
             (add-hook 'cider-mode-hook #'eldoc-mode)
@@ -460,52 +454,44 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
             (add-hook 'cider-mode-hook #'company-mode)
 
             (with-eval-after-load "ibuffer-dynamic-groups"
-            (ibuffer-dynamic-groups-add
-             (lambda (groups)
-               (append '(("Cider" (or (name . "^\\*nrepl-.*\\*$")
-                                      (name . "^\\*cider-.*\\*$"))))
-                       groups))
-             '((name . cider-group)
-               (depth . -1))))))
+              (ibuffer-dynamic-groups-add
+               (lambda (groups)
+                 (append '(("Cider" (or (name . "^\\*nrepl-.*\\*$")
+                                        (name . "^\\*cider-.*\\*$"))))
+                         groups))
+               '((name . cider-group)
+                 (depth . -1))))))
 
 (use-package cmake-mode
-  :defer t
   :mode ("CMakeLists\\.txt\\'" "\\.cmake\\'"))
 
 (use-package js2-mode
-  :defer t
   :mode ("\\.js\\'" "\\.pac\\'")
   :interpreter "node")
 
 (use-package json-mode
-  :defer t
   :mode "\\.json\\'")
 
 (use-package scheme
-  :defer t
   :mode ("\\.scm\\'" . scheme-mode))
 
 (use-package geiser
+  :defer t
   :config (setq geiser-mode-start-repl-p t))
 
 (use-package groovy-mode
-  :defer t
   :mode ("\\.groovy\\'" "JenkinsFile\\'"))
 
 (use-package dockerfile-mode
-  :defer t
   :mode "Dockerfile\\'")
 
 (use-package yaml-mode
-  :defer t
   :mode ("\\.yaml\\'" "\\.yml\\'"))
 
 (use-package markdown-mode
-  :defer t
   :mode ("\\.md\\'" "\\.markdown\\'"))
 
 (use-package lua-mode
-  :defer t
   :mode "\\.lua\\'")
 
 (let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc"
@@ -524,7 +510,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                (sh-set-shell "zsh")))))
 
 (use-package terraform-mode
-  :defer t
   :mode ("\\.tf\\'" "\\.tvars\\'"))
 
 (defmacro wm/define-launcher (fun-name command-and-args)
@@ -534,7 +519,9 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
    (start-process-shell-command "" nil ,command-and-args)))
 
 (use-package exwm
+  ;; TODO find test for emacs on root window to put here
   :if window-system
+  :defer t
   :config
   (progn
     (require 'exwm-config)
@@ -600,7 +587,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     (wm/define-launcher wm/music-manager "terminator -e 'ncmpcpp -s playlist -S visualizer'")
 
     ;; TODO get windmove integration working better
-    (with-eval-after-load "windmove"
+    (when (require 'windmove nil t)
       (use-package framemove
   :config (progn ;; windmove with framemove integration
       (defun wm/frame-move (dir)
@@ -700,9 +687,10 @@ trigger the paste operation, `string' will be inserted into the application."
     (add-hook 'exwm-init-hook #'wm/xrandr-init)
     (add-hook 'exwm-exit-hook #'wm/xrandr-exit)
 
-    (when (require 'ido nil t)
-      (exwm-input-set-key (kbd "s-x b") #'ido-switch-buffer)
-      (exwm-config-ido))
+    (if (require 'ido nil t)
+        (progn (exwm-input-set-key (kbd "s-x b") #'ido-switch-buffer)
+               (exwm-config-ido))
+      (exwm-config-default))
 
     (exwm-input-set-key (kbd "s-SPC") #'exwm-input-toggle-keyboard)
 
@@ -757,6 +745,7 @@ trigger the paste operation, `string' will be inserted into the application."
 
     (display-time-mode t)
     (display-battery-mode t)
-    (exwm-systemtray-enable)))
+    (exwm-systemtray-enable)
+    (exwm-enable)))
 
 ;; init.el ends here
