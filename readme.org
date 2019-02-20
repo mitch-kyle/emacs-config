@@ -98,34 +98,34 @@ and does't prevent the rest of your configuration from loading. Set it to use st
 *** straight.el Workaround
 Because straight.el can't properly compile org yet, we need to define the org-version function
 ourselves to prevent the old builtin org from being loaded instead.
- #+begin_src emacs-lisp
- (use-package git)
- (when (require 'git nil t)
-   (defun org-git-version ()
-     "The Git version of org-mode.
- Inserted by installing org-mode or when a release is made."
-     (let ((git-repo (expand-file-name "straight/repos/org/"
-               user-emacs-directory)))
-       (string-trim
-   (git-run "describe"
-      "--match=release\*"
-      "--abbrev=6"
-      "HEAD"))))
+#+begin_src emacs-lisp
+(use-package git)
+(when (require 'git nil t)
+  (defun org-git-version ()
+    "The Git version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (git-run "describe"
+                "--match=release\*"
+                "--abbrev=6"
+                "HEAD"))))
 
-   (defun org-release ()
-     "The release version of org-mode.
- Inserted by installing org-mode or when a release is made."
-     (let ((git-repo (expand-file-name "straight/repos/org/"
-               user-emacs-directory)))
-       (string-trim
-  (string-remove-prefix
-   "release_"
-   (git-run "describe"
-      "--match=release\*"
-      "--abbrev=0"
-      "HEAD")))))
+  (defun org-release ()
+    "The release version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (string-remove-prefix
+        "release_"
+        (git-run "describe"
+                 "--match=release\*"
+                 "--abbrev=0"
+                 "HEAD")))))
 
-   (provide 'org-version))
+  (provide 'org-version))
  #+end_src
 
 *** Org Configuration
@@ -143,27 +143,27 @@ A function to rebuild this file if it's changed since the last time it was built
     "Rebuild init file if it's changed since the last time it was built."
     (interactive)
     (let ((source-file    (expand-file-name "readme.org" user-emacs-directory))
-    (generated-file (expand-file-name "init.el" user-emacs-directory)))
+          (generated-file (expand-file-name "init.el" user-emacs-directory)))
       (when (org-file-newer-than-p source-file
-           (file-attribute-modification-time
-             (file-attributes generated-file)))
-  (org-babel-tangle-file source-file generated-file "emacs-lisp")
-  (byte-compile-file generated-file)
-  t))))
+                                   (file-attribute-modification-time
+                                    (file-attributes generated-file)))
+        (org-babel-tangle-file source-file generated-file "emacs-lisp")
+        (byte-compile-file generated-file)
+        t))))
 #+end_src
 
 Check for changes. If there are then load the new file and stop load this file.
 #+begin_src emacs-lisp
 (when (and (functionp 'mkyle/rebuild-init-file)
-     (mkyle/rebuild-init-file))
-    (load (expand-file-name "init.elc" user-emacs-directory))
-    (error (concat "Loaded from dirty config. "
-       "This isn't likely to cause problems and should be "
-       "fix when emacs is restarted. "
-       "Thought you aught to know.")))
+           (mkyle/rebuild-init-file))
+  (load (expand-file-name "init.elc" user-emacs-directory))
+  (error (concat "Loaded from dirty config. "
+                 "This isn't likely to cause problems and should be "
+                 "fix when emacs is restarted. "
+                 "Thought you aught to know.")))
 #+end_src
 
-*** TODO Recompile on save
+*** TODO Recompile on save rather than startup
 *** TODO Script to Build from Stock Emacs
 
 * Manage Config Directory
@@ -237,7 +237,7 @@ The startup screen has some nice information for new users but it's in the way.
 Same with the scratch buffer explaination
 
 #+begin_src emacs-lisp
-(setq inhibit-startup-screen t
+(setq inhibit-startup-screen  t
       initial-scratch-message nil)
 #+end_src
 
@@ -293,15 +293,19 @@ Just call:
 
 and file 'filename' will be opened and cursor set on line 'linenumber'"
   (ad-set-arg 0
-        (mapcar (lambda (fn)
-      (let ((name (car fn)))
-        (if (string-match "^\\(.*?\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?$" name)
-          (cons
-            (match-string 1 name)
-            (cons (string-to-number (match-string 2 name))
-            (string-to-number (or (match-string 3 name) ""))))
-          fn)))
-          files)))
+              (mapcar (lambda (fn)
+                        (let ((name (car fn)))
+                          (if (string-match
+                               "^\\(.*?\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?$"
+                               name)
+                              (cons
+                                (match-string 1 name)
+                                (cons (string-to-number (match-string 2 name))
+                                      (string-to-number
+                                       (or (match-string 3 name)
+                                           ""))))
+                            fn)))
+                      files)))
 #+end_src
 
 *** Titles
@@ -309,13 +313,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 The frame is the whole external "emacs window", not to be confused with a window within emacs which displays
 a buffer. An emacs instance may have multiple frames and a frame may have multiple windows. This sets the
 title of the window to the filename of the active buffer if available otherwise the buffer name.
-
 #+begin_src emacs-lisp
 (setq frame-title-format
       '("" invocation-name " - "
-  (:eval (if (buffer-file-name)
-       (abbreviate-file-name (buffer-file-name))
-     "%b"))))
+        (:eval (if (buffer-file-name)
+                   (abbreviate-file-name (buffer-file-name))
+                 "%b"))))
  #+end_src
 
 **** Buffer Titles
@@ -323,11 +326,11 @@ Rename buffers with the same file name to something useful
 #+begin_src emacs-lisp
 (when (require 'uniquify nil t)
   (setq uniquify-buffer-name-style   'forward
-  uniquify-separator           "/"
-  ;; rename after killing uniquified
-  uniquify-after-kill-buffer-p t
-  ;; ignore system buffers
-  uniquify-ignore-buffers-re   "^\\*"))
+        uniquify-separator           "/"
+        ;; rename after killing uniquified
+        uniquify-after-kill-buffer-p t
+        ;; ignore system buffers
+        uniquify-ignore-buffers-re   "^\\*"))
 #+end_src
 
 *** Reload When Files Change
@@ -341,17 +344,18 @@ Save most recently run commands and text searches
 #+begin_src emacs-lisp
 (when (require 'savehist nil t)
   (setq savehist-additional-variables
-  '(search-ring regexp-search-ring)
-  ;; save every minute
-  savehist-autosave-interval 60)
-  (savehist-mode +1))
+        '(search-ring regexp-search-ring)
+        ;; save every minute
+        savehist-autosave-interval 60)
+        (savehist-mode +1))
 
 ;; smex, remember recently and most frequently used commands
-(use-package smex
-  :config (progn
-      (smex-initialize)
-      (global-set-key (kbd "M-x") 'smex)
-      (global-set-key (kbd "M-X") 'smex-major-mode-commands)))
+(with-eval-after-load "ido"
+  (use-package smex
+    :config (progn
+              (smex-initialize)
+              (global-set-key (kbd "M-x") 'smex)
+              (global-set-key (kbd "M-X") 'smex-major-mode-commands))))
 #+end_src
 
 *** Splitting Windows
@@ -361,24 +365,24 @@ Prefer to split veritcally rather than horizontally. Shamelessly stolen from sta
   "Split window more senibly.  WINDOW."
   (let ((window (or window (selected-window))))
     (or (and (window-splittable-p window t)
-       ;; Split window horizontally.
-       (with-selected-window window
-         (split-window-right)))
-  (and (window-splittable-p window)
-       ;; Split window vertically.
-       (with-selected-window window
-           (split-window-below)))
-  (and (eq window (frame-root-window (window-frame window)))
-       (not (window-minibuffer-p window))
-       ;; If WINDOW is the only window on its frame and is not the
-       ;; minibuffer window, try to split it horizontally disregarding
-       ;; the value of `split-width-threshold'.
-       (let ((split-width-threshold 0))
-         (when (window-splittable-p window t)
-     (with-selected-window window
-       (split-window-right))))))))
+             ;; Split window horizontally.
+             (with-selected-window window
+               (split-window-right)))
+        (and (window-splittable-p window)
+             ;; Split window vertically.
+             (with-selected-window window
+               (split-window-below)))
+        (and (eq window (frame-root-window (window-frame window)))
+             (not (window-minibuffer-p window))
+             ;; If WINDOW is the only window on its frame and is not the
+             ;; minibuffer window, try to split it horizontally disregarding
+             ;; the value of `split-width-threshold'.
+             (let ((split-width-threshold 0))
+               (when (window-splittable-p window t)
+                 (with-selected-window window
+                   (split-window-right))))))))
 
-(setq split-window-preferred-function #'mkyle/split-window)
+(setq-default split-window-preferred-function #'mkyle/split-window)
 #+end_src
 
 *** Finding the Cursor
@@ -427,15 +431,15 @@ by other packages (like ibuffer-projectile)
   (with-eval-after-load "straight"
     (use-package ibuffer-dynamic-groups
       :straight (ibuffer-dynamic-groups :type git
-    :host github
-    :repo "mitch-kyle/ibuffer-dynamic-groups")
-    :config (progn
-        (ibuffer-dynamic-groups-add
-          (lambda (groups)
-      (append groups
-        '(("System" (name . "^\\*.*\\*$")))))
-          '((name . system-group)))
-        (ibuffer-dynamic-groups t)))))
+      :host github
+      :repo "mitch-kyle/ibuffer-dynamic-groups")
+      :config (progn
+                (ibuffer-dynamic-groups-add
+                 (lambda (groups)
+                   (append groups
+                           '(("System" (name . "^\\*.*\\*$")))))
+                 '((name . system-group)))
+                (ibuffer-dynamic-groups t)))))
 #+end_src
 
 *** Ido
@@ -444,14 +448,15 @@ See [[http://ergoemacs.org/emacs/emacs_ido_mode.html][ergomacs ido tutorial]]
 
 #+begin_src emacs-lisp
 (use-package ido
-  :config (progn
+  :config
+  (progn
     (setq ido-enable-prefix                      nil
-    ido-enable-flex-matching               t
-    ido-create-new-buffer                  'always
-    ido-use-filename-at-point              'guess
-    ido-max-prospects                      10
-    ido-default-file-method                'selected-window
-    ido-auto-merge-work-directories-length -1)
+          ido-enable-flex-matching               t
+          ido-create-new-buffer                  'always
+          ido-use-filename-at-point              'guess
+          ido-max-prospects                      10
+          ido-default-file-method                'selected-window
+          ido-auto-merge-work-directories-length -1)
     (ido-mode +1)
 
     (use-package ido-completing-read+
@@ -460,8 +465,8 @@ See [[http://ergoemacs.org/emacs/emacs_ido_mode.html][ergomacs ido tutorial]]
     ;; smarter fuzzy matching for ido
     (use-package flx-ido
       :config (progn (flx-ido-mode +1)
-         ;; disable ido faces to see flx highlights
-         (setq ido-use-faces nil)))))
+                     ;; disable ido faces to see flx highlights
+                     (setq ido-use-faces nil)))))
 #+end_src
 
 *** Windmove
@@ -482,8 +487,8 @@ A set of commands for editing files as part of a project
 #+begin_src emacs-lisp
 (use-package projectile
   :config (progn
-      (projectile-mode t)
-      (global-set-key (kbd "C-c p") projectile-command-map)))
+            (projectile-mode t)
+            (global-set-key (kbd "C-c p") projectile-command-map)))
 #+end_src
 
 **** Projectile IBuffer Groups
@@ -492,13 +497,15 @@ Group files by project in ibuffer
 (with-eval-after-load "projectile"
   (with-eval-after-load "ibuffer-dynamic-groups"
     (use-package ibuffer-projectile
-      :config (progn
-    (setq ibuffer-projectile-prefix "- ")
-    (ibuffer-dynamic-groups-add (lambda (groups)
-                (append (ibuffer-projectile-generate-filter-groups)
-                  groups))
-              '((name . projectile-groups)
-                (depth . -50)))))))
+      :config
+      (progn
+        (setq ibuffer-projectile-prefix "- ")
+        (ibuffer-dynamic-groups-add
+         (lambda (groups)
+           (append (ibuffer-projectile-generate-filter-groups)
+                   groups))
+         '((name . projectile-groups)
+           (depth . -50)))))))
 #+end_src
 
 *** Tramp
@@ -514,10 +521,10 @@ Exclude files in the variable directory.
 #+begin_src emacs-lisp
 (when (require 'recentf nil t)
   (setq recentf-max-saved-items 500
-  recentf-max-menu-items 15
-  ;; disable recentf-cleanup on Emacs start, because it can cause
-  ;; problems with remote files
-  recentf-auto-cleanup 'never)
+        recentf-max-menu-items 15
+        ;; disable recentf-cleanup on Emacs start, because it can cause
+        ;; problems with remote files
+        recentf-auto-cleanup 'never)
 
   (defun mkyle/recentf-exclude-p (file)
     "A predicate to decide whether to exclude FILE from recentf."
@@ -560,8 +567,8 @@ Maintain cursor position when scrolling
 Use spaces instead of tabs
 #+begin_src emacs-lisp
 (setq-default indent-tabs-mode  nil
-        tab-width         2
-        tab-always-indent 'complete)
+              tab-width         4
+              tab-always-indent 'complete)
 
 (require 'tabify nil t)
 #+end_src
@@ -600,8 +607,8 @@ Company is your general purpose autocomplete dropdown. enable it always
 **** Search Results
 Highlight search results
 #+begin_src emacs-lisp
-(setq search-highlight t
-      query-replace-highlight t)
+(setq-default search-highlight t
+              query-replace-highlight t)
 #+end_src
 
 **** Show Paren
@@ -628,7 +635,8 @@ looks horrible on a typical terminal
 #+begin_src emacs-lisp
 (use-package monokai-theme
   :if window-system
-  :config (load-theme 'monokai t))
+  :config (progn (load-theme 'monokai t)
+                 (set-face-foreground 'show-paren-match "DimGrey")))
 #+end_src
 
 *** Mode Line Eyecandy - Spaceline
@@ -637,7 +645,7 @@ Spaceline is a nice looking modeline package based on powerline from the [[http:
 (use-package spaceline
   :if window-system
   :config (progn (setq powerline-default-separator 'contour)
-     (spaceline-emacs-theme)))
+                 (spaceline-emacs-theme)))
 #+end_src
 **** TODO Spaceline all-the-icons
 
@@ -645,7 +653,7 @@ Spaceline is a nice looking modeline package based on powerline from the [[http:
 Make the vertical window divider available but only one pixel wide
 #+begin_src emacs-lisp
 (when window-system
-  (setq window-divider-default-right-width 1)
+  (setq-default window-divider-default-right-width 1)
   (window-divider-mode t))
 #+end_src
 
@@ -657,10 +665,10 @@ I like the "glass editing window" effect. This sets it that way by default and g
     "Toggle off window transparency"
     (interactive)
     (set-frame-parameter nil 'alpha
-   (if (eql (car (frame-parameter nil 'alpha))
-      100)
-       '(95 . 95)
-         '(100 . 100))))
+      (if (eql (car (frame-parameter nil 'alpha))
+               100)
+          '(95 . 95)
+        '(100 . 100))))
 
   (set-frame-parameter nil 'alpha '(95 . 95)))
 #+end_src
@@ -694,19 +702,20 @@ To use emacs as a git mergetool, you need to add something like the following to
   tool = ediff
 #+end_src
 
-Cleanup ediff buffers and restore window configuration when finished
+Cleanup ediff buffers and restore window configuration when finished.
+It works poorly and could use some tinkering
 #+begin_src emacs-lisp
 (with-eval-after-load "ediff"
   ;; TODO this fails when ediff complains about a buffer already open for a file being merged
   (defun mkyle/ediff-janitor ()
     "Delete buffers and restore window on ediff exit."
     (let* ((ctl-buf ediff-control-buffer)
-     (ctl-win (ediff-get-visible-buffer-window ctl-buf))
-     (ctl-frm ediff-control-frame)
-     (main-frame (cond ((window-live-p ediff-window-A)
-            (window-frame ediff-window-A))
-           ((window-live-p ediff-window-B)
-            (window-frame ediff-window-B)))))
+           (ctl-win (ediff-get-visible-buffer-window ctl-buf))
+           (ctl-frm ediff-control-frame)
+           (main-frame (cond ((window-live-p ediff-window-A)
+                              (window-frame ediff-window-A))
+                             ((window-live-p ediff-window-B)
+                              (window-frame ediff-window-B)))))
       (ediff-kill-buffer-carefully ediff-diff-buffer)
       (ediff-kill-buffer-carefully ediff-custom-diff-buffer)
       (ediff-kill-buffer-carefully ediff-fine-diff-buffer)
@@ -715,25 +724,27 @@ Cleanup ediff buffers and restore window configuration when finished
       (ediff-kill-buffer-carefully ediff-msg-buffer)
       (ediff-kill-buffer-carefully ediff-debug-buffer)
       (when (boundp 'ediff-patch-diagnostics)
-  (ediff-kill-buffer-carefully ediff-patch-diagnostics))
+        (ediff-kill-buffer-carefully ediff-patch-diagnostics))
       (cond ((and (ediff-window-display-p)
-      (frame-live-p ctl-frm))
-       (delete-frame ctl-frm))
-      ((window-live-p ctl-win)
-       (delete-window ctl-win)))
+                  (frame-live-p ctl-frm))
+             (delete-frame ctl-frm))
+            ((window-live-p ctl-win)
+             (delete-window ctl-win)))
       (unless (ediff-multiframe-setup-p)
-  (ediff-kill-bottom-toolbar))
+        (ediff-kill-bottom-toolbar))
       (ediff-kill-buffer-carefully ctl-buf)
       (when (frame-live-p main-frame)
-  (select-frame main-frame)))
+        (select-frame main-frame)))
     (ediff-janitor nil nil))
 
   (add-hook 'ediff-cleanup-hook 'mkyle/ediff-janitor))
 
+;; Technically a window management suite but it'll do to return the
+;; window to normal after an ediff session
 (use-package winner
   :config (progn (winner-mode +1)
-     (with-eval-after-load "ediff"
-       (add-hook 'ediff-cleanup-hook 'winner-undo))))
+                 (with-eval-after-load "ediff"
+                   (add-hook 'ediff-cleanup-hook 'winner-undo))))
 #+end_src
 
 ** IRC
@@ -741,11 +752,11 @@ Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long bu
 #+begin_src emacs-lisp
 (with-eval-after-load "erc"
   (setq erc-query-display 'buffer
-  erc-interpret-mirc-color t
-  erc-server-coding-system '(utf-8 . utf-8)
-  erc-save-buffer-on-part t
-  erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
-          "324" "329" "332" "333" "353" "477"))
+        erc-interpret-mirc-color t
+        erc-server-coding-system '(utf-8 . utf-8)
+        erc-save-buffer-on-part t
+        erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
+                                  "324" "329" "332" "333" "353" "477"))
 
   (erc-truncate-mode +1)
   (erc-track-mode t)
@@ -764,7 +775,7 @@ Extension language for emacs. Most useful packages for elisp are included with v
 *** Documentation
 Show documentation in the minibuffer for symbol under cursor
 #+begin_src emacs-lisp
-(when (require 'eldoc nil t)
+(with-eval-after-load "eldoc"
   (diminish 'eldoc-mode)
   (add-hook 'emacs-lisp-mode-hook 'eldoc-mode))
 #+end_src
@@ -774,22 +785,23 @@ Automatically compile emacs lisp files from the user configuration directory =~/
 
 #+begin_src emacs-lisp
 (use-package auto-compile
-  :config (progn
-      (setq auto-compile-display-buffer    nil
-      auto-compile-mode-line-counter t)
-      (auto-compile-on-load-mode)
-      (auto-compile-on-save-mode)))
+  :config
+  (progn
+    (setq auto-compile-display-buffer    nil
+          auto-compile-mode-line-counter t)
+    (auto-compile-on-load-mode)
+    (auto-compile-on-save-mode)))
 
 (defun mkyle/elisp-recompile-elc-on-save ()
   "Recompile your elc when saving an elisp file."
   (add-hook 'after-save-hook
-      (lambda ()
-        (when (and (string-prefix-p user-emacs-directory
-            (file-truename buffer-file-name))
-       (file-exists-p (byte-compile-dest-file buffer-file-name)))
-    (emacs-lisp-byte-compile)))
-      nil
-      t))
+    (lambda ()
+      (when (and (string-prefix-p user-emacs-directory
+                                  (file-truename buffer-file-name))
+                 (file-exists-p (byte-compile-dest-file buffer-file-name)))
+        (emacs-lisp-byte-compile)))
+        nil
+        t))
 
 (add-hook 'emacs-lisp-mode-hook 'mkyle/elisp-recompile-elc-on-save)
 #+end_src
@@ -797,17 +809,16 @@ Automatically compile emacs lisp files from the user configuration directory =~/
 ** Conf Files
 Syntax highlighting for unix config files
 #+begin_src emacs-lisp
-(when (require 'conf-mode nil t)
-  (mapc (lambda (fname)
-    (add-to-list 'auto-mode-alist `(,fname . conf-mode)))
-  (list "\\.conf\\'"
-        "\\.desktop\\'"
-        "\\.service\\'")))
+(mapc (lambda (filename-regex)
+        (add-to-list 'auto-mode-alist `(,filename-regex . conf-mode)))
+      (list "\\.conf\\'"
+            "\\.desktop\\'"
+            "\\.service\\'"))
 #+end_src
 
 ** Clojure
 A more opinionated scheme for jvm written by Rich Hickey. Some said it wasn't possible to make a more
-particular scheme; Rich aggressively disagrees.
+particular scheme; Rich disagrees.
 
 #+begin_src emacs-lisp
 (use-package clojure-mode
@@ -820,21 +831,21 @@ Cider is a featureful repl for clojure development
 #+begin_src emacs-lisp
 (use-package cider
   :config (progn
-      (setq nrepl-log-messages t)
-      (add-hook 'cider-mode-hook #'eldoc-mode)
-      (add-hook 'cider-repl-mode-hook #'subword-mode)
-      (add-hook 'cider-repl-mode-hook #'rainbow-delimiters-mode)
-      (add-hook 'cider-repl-mode-hook #'company-mode)
-      (add-hook 'cider-mode-hook #'company-mode)
+            (setq nrepl-log-messages t)
+            (add-hook 'cider-mode-hook #'eldoc-mode)
+            (add-hook 'cider-repl-mode-hook #'subword-mode)
+            (add-hook 'cider-repl-mode-hook #'rainbow-delimiters-mode)
+            (add-hook 'cider-repl-mode-hook #'company-mode)
+            (add-hook 'cider-mode-hook #'company-mode)
 
-      (with-eval-after-load "ibuffer-dynamic-groups"
-        (ibuffer-dynamic-groups-add
-    (lambda (groups)
-      (append '(("Cider" (or (name . "^\\*nrepl-.*\\*$")
-           (name . "^\\*cider-.*\\*$"))))
-        groups))
-         '((name . cider-group)
-     (depth . -1))))))
+            (with-eval-after-load "ibuffer-dynamic-groups"
+            (ibuffer-dynamic-groups-add
+             (lambda (groups)
+               (append '(("Cider" (or (name . "^\\*nrepl-.*\\*$")
+                                      (name . "^\\*cider-.*\\*$"))))
+                       groups))
+             '((name . cider-group)
+               (depth . -1))))))
 #+end_src
 
 ** CMake
@@ -918,21 +929,25 @@ Because 'X' won't mod itself
 ** Zsh
 Interpret the *many* zsh configuration scripts as zsh and recognize the =.zsh= file extension
 #+begin_src emacs-lisp
-(when (require 'sh-script nil t)
-  (let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc" "zprofile" "zshenv" "zshrc" ".zsh")))
-    (add-to-list 'auto-mode-alist '("\\.zsh\\'" . shell-script-mode))
-    (mapc (lambda (file)
-      (add-to-list 'auto-mode-alist `(,(format "\\%s\\'" file) . sh-mode)))
-    zsh-files)
-    (add-hook 'sh-mode-hook
-        (lambda ()
-    (if (and buffer-file-name
-        (member (file-name-nondirectory buffer-file-name) zsh-files))
-      (sh-set-shell "zsh"))))))
+(let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc"
+                   "zprofile" "zshenv" "zshrc" ".zsh")))
+  (add-to-list 'auto-mode-alist '("\\.zsh\\'" . shell-script-mode))
+  (mapc (lambda (file)
+          (add-to-list 'auto-mode-alist
+                       `(,(format "\\%s\\'" file) . sh-mode)))
+        zsh-files)
+  (add-hook 'sh-mode-hook
+            (lambda ()
+              (when
+               (and buffer-file-name
+                    (member (file-name-nondirectory buffer-file-name)
+                            zsh-files))
+               (sh-set-shell "zsh")))))
 #+end_src
 
 ** Terraform
 Because why use something everyone's familiar with when you can create your own domain specific language?
+I'm just sour because I think scheme should be used to configure everything non-trivial. :-)
 #+begin_src emacs-lisp
 (use-package terraform-mode
   :defer t

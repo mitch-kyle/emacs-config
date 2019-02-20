@@ -59,21 +59,21 @@ Inserted by installing org-mode or when a release is made."
     "Rebuild init file if it's changed since the last time it was built."
     (interactive)
     (let ((source-file    (expand-file-name "readme.org" user-emacs-directory))
-    (generated-file (expand-file-name "init.el" user-emacs-directory)))
+          (generated-file (expand-file-name "init.el" user-emacs-directory)))
       (when (org-file-newer-than-p source-file
-           (file-attribute-modification-time
-             (file-attributes generated-file)))
-  (org-babel-tangle-file source-file generated-file "emacs-lisp")
-  (byte-compile-file generated-file)
-  t))))
+                                   (file-attribute-modification-time
+                                    (file-attributes generated-file)))
+        (org-babel-tangle-file source-file generated-file "emacs-lisp")
+        (byte-compile-file generated-file)
+        t))))
 
 (when (and (functionp 'mkyle/rebuild-init-file)
-     (mkyle/rebuild-init-file))
-    (load (expand-file-name "init.elc" user-emacs-directory))
-    (error (concat "Loaded from dirty config. "
-       "This isn't likely to cause problems and should be "
-       "fix when emacs is restarted. "
-       "Thought you aught to know.")))
+           (mkyle/rebuild-init-file))
+  (load (expand-file-name "init.elc" user-emacs-directory))
+  (error (concat "Loaded from dirty config. "
+                 "This isn't likely to cause problems and should be "
+                 "fix when emacs is restarted. "
+                 "Thought you aught to know.")))
 
 (use-package no-littering)
 
@@ -98,7 +98,7 @@ Inserted by installing org-mode or when a release is made."
 (when (member "Symbola" (font-family-list))
   (set-fontset-font t 'unicode "Symbola" nil 'prepend))
 
-(setq inhibit-startup-screen t
+(setq inhibit-startup-screen  t
       initial-scratch-message nil)
 
 (setq-default large-file-warning-threshold 104857600)
@@ -121,68 +121,73 @@ Just call:
 
 and file 'filename' will be opened and cursor set on line 'linenumber'"
   (ad-set-arg 0
-        (mapcar (lambda (fn)
-      (let ((name (car fn)))
-        (if (string-match "^\\(.*?\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?$" name)
-          (cons
-            (match-string 1 name)
-            (cons (string-to-number (match-string 2 name))
-            (string-to-number (or (match-string 3 name) ""))))
-          fn)))
-          files)))
+              (mapcar (lambda (fn)
+                        (let ((name (car fn)))
+                          (if (string-match
+                               "^\\(.*?\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?$"
+                               name)
+                              (cons
+                                (match-string 1 name)
+                                (cons (string-to-number (match-string 2 name))
+                                      (string-to-number
+                                       (or (match-string 3 name)
+                                           ""))))
+                            fn)))
+                      files)))
 
 (setq frame-title-format
       '("" invocation-name " - "
-  (:eval (if (buffer-file-name)
-       (abbreviate-file-name (buffer-file-name))
-     "%b"))))
+        (:eval (if (buffer-file-name)
+                   (abbreviate-file-name (buffer-file-name))
+                 "%b"))))
 
 (when (require 'uniquify nil t)
   (setq uniquify-buffer-name-style   'forward
-  uniquify-separator           "/"
-  ;; rename after killing uniquified
-  uniquify-after-kill-buffer-p t
-  ;; ignore system buffers
-  uniquify-ignore-buffers-re   "^\\*"))
+        uniquify-separator           "/"
+        ;; rename after killing uniquified
+        uniquify-after-kill-buffer-p t
+        ;; ignore system buffers
+        uniquify-ignore-buffers-re   "^\\*"))
 
 (global-auto-revert-mode t)
 
 (when (require 'savehist nil t)
   (setq savehist-additional-variables
-  '(search-ring regexp-search-ring)
-  ;; save every minute
-  savehist-autosave-interval 60)
-  (savehist-mode +1))
+        '(search-ring regexp-search-ring)
+        ;; save every minute
+        savehist-autosave-interval 60)
+        (savehist-mode +1))
 
 ;; smex, remember recently and most frequently used commands
-(use-package smex
-  :config (progn
-      (smex-initialize)
-      (global-set-key (kbd "M-x") 'smex)
-      (global-set-key (kbd "M-X") 'smex-major-mode-commands)))
+(with-eval-after-load "ido"
+  (use-package smex
+    :config (progn
+              (smex-initialize)
+              (global-set-key (kbd "M-x") 'smex)
+              (global-set-key (kbd "M-X") 'smex-major-mode-commands))))
 
 (defun mkyle/split-window (&optional window)
   "Split window more senibly.  WINDOW."
   (let ((window (or window (selected-window))))
     (or (and (window-splittable-p window t)
-       ;; Split window horizontally.
-       (with-selected-window window
-         (split-window-right)))
-  (and (window-splittable-p window)
-       ;; Split window vertically.
-       (with-selected-window window
-           (split-window-below)))
-  (and (eq window (frame-root-window (window-frame window)))
-       (not (window-minibuffer-p window))
-       ;; If WINDOW is the only window on its frame and is not the
-       ;; minibuffer window, try to split it horizontally disregarding
-       ;; the value of `split-width-threshold'.
-       (let ((split-width-threshold 0))
-         (when (window-splittable-p window t)
-     (with-selected-window window
-       (split-window-right))))))))
+             ;; Split window horizontally.
+             (with-selected-window window
+               (split-window-right)))
+        (and (window-splittable-p window)
+             ;; Split window vertically.
+             (with-selected-window window
+               (split-window-below)))
+        (and (eq window (frame-root-window (window-frame window)))
+             (not (window-minibuffer-p window))
+             ;; If WINDOW is the only window on its frame and is not the
+             ;; minibuffer window, try to split it horizontally disregarding
+             ;; the value of `split-width-threshold'.
+             (let ((split-width-threshold 0))
+               (when (window-splittable-p window t)
+                 (with-selected-window window
+                   (split-window-right))))))))
 
-(setq split-window-preferred-function #'mkyle/split-window)
+(setq-default split-window-preferred-function #'mkyle/split-window)
 
 (use-package beacon
   :diminish beacon-mode
@@ -209,25 +214,25 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   (with-eval-after-load "straight"
     (use-package ibuffer-dynamic-groups
       :straight (ibuffer-dynamic-groups :type git
-    :host github
-    :repo "mitch-kyle/ibuffer-dynamic-groups")
-    :config (progn
-        (ibuffer-dynamic-groups-add
-          (lambda (groups)
-      (append groups
-        '(("System" (name . "^\\*.*\\*$")))))
-          '((name . system-group)))
-        (ibuffer-dynamic-groups t)))))
+      :host github
+      :repo "mitch-kyle/ibuffer-dynamic-groups")
+      :config (progn
+                (ibuffer-dynamic-groups-add
+                 (lambda (groups)
+                   (append groups
+                           '(("System" (name . "^\\*.*\\*$")))))
+                 '((name . system-group)))
+                (ibuffer-dynamic-groups t)))))
 
 (use-package ido
   :config (progn
     (setq ido-enable-prefix                      nil
-    ido-enable-flex-matching               t
-    ido-create-new-buffer                  'always
-    ido-use-filename-at-point              'guess
-    ido-max-prospects                      10
-    ido-default-file-method                'selected-window
-    ido-auto-merge-work-directories-length -1)
+          ido-enable-flex-matching               t
+          ido-create-new-buffer                  'always
+          ido-use-filename-at-point              'guess
+          ido-max-prospects                      10
+          ido-default-file-method                'selected-window
+          ido-auto-merge-work-directories-length -1)
     (ido-mode +1)
 
     (use-package ido-completing-read+
@@ -236,8 +241,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     ;; smarter fuzzy matching for ido
     (use-package flx-ido
       :config (progn (flx-ido-mode +1)
-         ;; disable ido faces to see flx highlights
-         (setq ido-use-faces nil)))))
+                     ;; disable ido faces to see flx highlights
+                     (setq ido-use-faces nil)))))
 
 (when (require 'windmove nil t)
   (global-set-key [s-left]  'windmove-left)
@@ -247,8 +252,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package projectile
   :config (progn
-      (projectile-mode t)
-      (global-set-key (kbd "C-c p") projectile-command-map)))
+            (projectile-mode t)
+            (global-set-key (kbd "C-c p") projectile-command-map)))
 
 (with-eval-after-load "projectile"
   (with-eval-after-load "ibuffer-dynamic-groups"
@@ -266,10 +271,10 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (when (require 'recentf nil t)
   (setq recentf-max-saved-items 500
-  recentf-max-menu-items 15
-  ;; disable recentf-cleanup on Emacs start, because it can cause
-  ;; problems with remote files
-  recentf-auto-cleanup 'never)
+        recentf-max-menu-items 15
+        ;; disable recentf-cleanup on Emacs start, because it can cause
+        ;; problems with remote files
+        recentf-auto-cleanup 'never)
 
   (defun mkyle/recentf-exclude-p (file)
     "A predicate to decide whether to exclude FILE from recentf."
@@ -291,8 +296,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
       scroll-preserve-screen-position 1)
 
 (setq-default indent-tabs-mode  nil
-        tab-width         2
-        tab-always-indent 'complete)
+              tab-width         4
+              tab-always-indent 'complete)
 
 (require 'tabify nil t)
 
@@ -310,8 +315,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
            company-tooltip-flip-when-above t)
      (global-company-mode 1)))
 
-(setq search-highlight t
-      query-replace-highlight t)
+(setq-default search-highlight t
+              query-replace-highlight t)
 
 (show-paren-mode t)
 (set-face-foreground 'show-paren-match "DimGrey")
@@ -322,15 +327,16 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package monokai-theme
   :if window-system
-  :config (load-theme 'monokai t))
+  :config (progn (load-theme 'monokai t)
+                 (set-face-foreground 'show-paren-match "DimGrey")))
 
 (use-package spaceline
   :if window-system
   :config (progn (setq powerline-default-separator 'contour)
-     (spaceline-emacs-theme)))
+                 (spaceline-emacs-theme)))
 
 (when window-system
-  (setq window-divider-default-right-width 1)
+  (setq-default window-divider-default-right-width 1)
   (window-divider-mode t))
 
 (when window-system
@@ -338,10 +344,10 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     "Toggle off window transparency"
     (interactive)
     (set-frame-parameter nil 'alpha
-   (if (eql (car (frame-parameter nil 'alpha))
-      100)
-       '(95 . 95)
-         '(100 . 100))))
+      (if (eql (car (frame-parameter nil 'alpha))
+               100)
+          '(95 . 95)
+        '(100 . 100))))
 
   (set-frame-parameter nil 'alpha '(95 . 95)))
 
@@ -356,12 +362,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   (defun mkyle/ediff-janitor ()
     "Delete buffers and restore window on ediff exit."
     (let* ((ctl-buf ediff-control-buffer)
-     (ctl-win (ediff-get-visible-buffer-window ctl-buf))
-     (ctl-frm ediff-control-frame)
-     (main-frame (cond ((window-live-p ediff-window-A)
-            (window-frame ediff-window-A))
-           ((window-live-p ediff-window-B)
-            (window-frame ediff-window-B)))))
+           (ctl-win (ediff-get-visible-buffer-window ctl-buf))
+           (ctl-frm ediff-control-frame)
+           (main-frame (cond ((window-live-p ediff-window-A)
+                              (window-frame ediff-window-A))
+                             ((window-live-p ediff-window-B)
+                              (window-frame ediff-window-B)))))
       (ediff-kill-buffer-carefully ediff-diff-buffer)
       (ediff-kill-buffer-carefully ediff-custom-diff-buffer)
       (ediff-kill-buffer-carefully ediff-fine-diff-buffer)
@@ -370,33 +376,35 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
       (ediff-kill-buffer-carefully ediff-msg-buffer)
       (ediff-kill-buffer-carefully ediff-debug-buffer)
       (when (boundp 'ediff-patch-diagnostics)
-  (ediff-kill-buffer-carefully ediff-patch-diagnostics))
+        (ediff-kill-buffer-carefully ediff-patch-diagnostics))
       (cond ((and (ediff-window-display-p)
-      (frame-live-p ctl-frm))
-       (delete-frame ctl-frm))
-      ((window-live-p ctl-win)
-       (delete-window ctl-win)))
+                  (frame-live-p ctl-frm))
+             (delete-frame ctl-frm))
+            ((window-live-p ctl-win)
+             (delete-window ctl-win)))
       (unless (ediff-multiframe-setup-p)
-  (ediff-kill-bottom-toolbar))
+        (ediff-kill-bottom-toolbar))
       (ediff-kill-buffer-carefully ctl-buf)
       (when (frame-live-p main-frame)
-  (select-frame main-frame)))
+        (select-frame main-frame)))
     (ediff-janitor nil nil))
 
   (add-hook 'ediff-cleanup-hook 'mkyle/ediff-janitor))
 
+;; Technically a window management suite but it'll do to return the
+;; window to normal after an ediff session
 (use-package winner
   :config (progn (winner-mode +1)
-     (with-eval-after-load "ediff"
-       (add-hook 'ediff-cleanup-hook 'winner-undo))))
+                 (with-eval-after-load "ediff"
+                   (add-hook 'ediff-cleanup-hook 'winner-undo))))
 
 (with-eval-after-load "erc"
   (setq erc-query-display 'buffer
-  erc-interpret-mirc-color t
-  erc-server-coding-system '(utf-8 . utf-8)
-  erc-save-buffer-on-part t
-  erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
-          "324" "329" "332" "333" "353" "477"))
+        erc-interpret-mirc-color t
+        erc-server-coding-system '(utf-8 . utf-8)
+        erc-save-buffer-on-part t
+        erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
+                                  "324" "329" "332" "333" "353" "477"))
 
   (erc-truncate-mode +1)
   (erc-track-mode t)
@@ -408,7 +416,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   (when (require 'erc-spelling nil t)
     (erc-spelling-mode 1)))
 
-(when (require 'eldoc nil t)
+(with-eval-after-load "eldoc"
   (diminish 'eldoc-mode)
   (add-hook 'emacs-lisp-mode-hook 'eldoc-mode))
 
@@ -432,12 +440,11 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (add-hook 'emacs-lisp-mode-hook 'mkyle/elisp-recompile-elc-on-save)
 
-(when (require 'conf-mode nil t)
-  (mapc (lambda (fname)
-    (add-to-list 'auto-mode-alist `(,fname . conf-mode)))
-  (list "\\.conf\\'"
-        "\\.desktop\\'"
-        "\\.service\\'")))
+(mapc (lambda (filename-regex)
+        (add-to-list 'auto-mode-alist `(,filename-regex . conf-mode)))
+      (list "\\.conf\\'"
+            "\\.desktop\\'"
+            "\\.service\\'"))
 
 (use-package clojure-mode
   :mode ("\\.edn\\'" "\\.clj\\'")
@@ -445,21 +452,21 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package cider
   :config (progn
-      (setq nrepl-log-messages t)
-      (add-hook 'cider-mode-hook #'eldoc-mode)
-      (add-hook 'cider-repl-mode-hook #'subword-mode)
-      (add-hook 'cider-repl-mode-hook #'rainbow-delimiters-mode)
-      (add-hook 'cider-repl-mode-hook #'company-mode)
-      (add-hook 'cider-mode-hook #'company-mode)
+            (setq nrepl-log-messages t)
+            (add-hook 'cider-mode-hook #'eldoc-mode)
+            (add-hook 'cider-repl-mode-hook #'subword-mode)
+            (add-hook 'cider-repl-mode-hook #'rainbow-delimiters-mode)
+            (add-hook 'cider-repl-mode-hook #'company-mode)
+            (add-hook 'cider-mode-hook #'company-mode)
 
-      (with-eval-after-load "ibuffer-dynamic-groups"
-        (ibuffer-dynamic-groups-add
-    (lambda (groups)
-      (append '(("Cider" (or (name . "^\\*nrepl-.*\\*$")
-           (name . "^\\*cider-.*\\*$"))))
-        groups))
-         '((name . cider-group)
-     (depth . -1))))))
+            (with-eval-after-load "ibuffer-dynamic-groups"
+            (ibuffer-dynamic-groups-add
+             (lambda (groups)
+               (append '(("Cider" (or (name . "^\\*nrepl-.*\\*$")
+                                      (name . "^\\*cider-.*\\*$"))))
+                       groups))
+             '((name . cider-group)
+               (depth . -1))))))
 
 (use-package cmake-mode
   :defer t
@@ -501,17 +508,20 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :defer t
   :mode "\\.lua\\'")
 
-(when (require 'sh-script nil t)
-  (let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc" "zprofile" "zshenv" "zshrc" ".zsh")))
-    (add-to-list 'auto-mode-alist '("\\.zsh\\'" . shell-script-mode))
-    (mapc (lambda (file)
-      (add-to-list 'auto-mode-alist `(,(format "\\%s\\'" file) . sh-mode)))
-    zsh-files)
-    (add-hook 'sh-mode-hook
-        (lambda ()
-    (if (and buffer-file-name
-        (member (file-name-nondirectory buffer-file-name) zsh-files))
-      (sh-set-shell "zsh"))))))
+(let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc"
+                   "zprofile" "zshenv" "zshrc" ".zsh")))
+  (add-to-list 'auto-mode-alist '("\\.zsh\\'" . shell-script-mode))
+  (mapc (lambda (file)
+          (add-to-list 'auto-mode-alist
+                       `(,(format "\\%s\\'" file) . sh-mode)))
+        zsh-files)
+  (add-hook 'sh-mode-hook
+            (lambda ()
+              (when
+               (and buffer-file-name
+                    (member (file-name-nondirectory buffer-file-name)
+                            zsh-files))
+               (sh-set-shell "zsh")))))
 
 (use-package terraform-mode
   :defer t
