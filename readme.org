@@ -9,8 +9,6 @@ Inspired by [[http://aaronbedra.com/emacs.d/][Aaron Bedra's config]] with many e
 
 This is a [[https://en.wikipedia.org/wiki/Literate_programming][literate program]] which is intended to sit at =~/.emacs.d/readme.org= and
 compile to =~/.emacs.d/init.el=. The file can be recompiled by running =mkyle/rebuild-init-file=.
-The initialization sequence should check if this file has changed and if it has, then recompile
-and load the new file as early as possible.
 
 This file is named =readme.org= so it will show up on the github repo landing page and the idea of
 having a literate program called "readme" amuses me slightly.
@@ -41,14 +39,11 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#start-the-server][Start The Server]]
   - [[#package-manager---straightel][Package Manager - straight.el]]
   - [[#package-configuration---use-package][Package Configuration - use-package]]
-  - [[#org-mode][Org Mode]]
-    - [[#straightel-workaround][straight.el Workaround]]
-    - [[#org-configuration][Org Configuration]]
   - [[#compiling-this-file][Compiling this File]]
-- [[#manage-config-directory][Manage Config Directory]]
-  - [[#no-litter][No Litter]]
-  - [[#custom][Custom]]
 - [[#look-and-feel][Look And Feel]]
+  - [[#manage-config-directory][Manage Config Directory]]
+    - [[#no-litter][No Litter]]
+    - [[#custom][Custom]]
   - [[#mode-line][Mode Line]]
     - [[#hide-minor-modes][Hide Minor Modes]]
     - [[#search-results][Search Results]]
@@ -73,7 +68,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#list-buffers---ibuffer][List Buffers - IBuffer]]
       - [[#ibuffer-columns][IBuffer Columns]]
       - [[#ibuffer-filter-groups][IBuffer Filter Groups]]
-    - [[#helpful-suggestions---ido][Helpful Suggestions - Ido]]
+    - [[#list-options-when-doing-things---ido][List Options When Doing Things - Ido]]
     - [[#direct-based-window-navigation---windmove][Direct Based Window Navigation - Windmove]]
   - [[#editing][Editing]]
     - [[#project-management---projectile][Project Management - Projectile]]
@@ -97,6 +92,9 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#window-divider][Window Divider]]
     - [[#transparency][Transparency]]
 - [[#major-modes][Major Modes]]
+  - [[#org-mode][Org Mode]]
+    - [[#straightel-workaround][straight.el Workaround]]
+    - [[#org-packages][Org Packages]]
   - [[#git][Git]]
     - [[#magit][Magit]]
     - [[#git-file-modes][Git file modes]]
@@ -183,61 +181,10 @@ and does't prevent the rest of your configuration from loading. Set it to use st
 (straight-use-package 'use-package)
 #+end_src
 
-** Org Mode
- Org mode is used to build this document so we're going load it as early as we can to prepare for
- rebuilding the configuration files
-
-*** straight.el Workaround
-Because straight.el can't properly compile org yet, we need to define the org-version function
-ourselves to prevent the old builtin org from being loaded instead.
-#+begin_src emacs-lisp
-(use-package git)
-(when (require 'git nil t)
-  (defun org-git-version ()
-    "The Git version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (git-run "describe"
-                "--match=release\*"
-                "--abbrev=6"
-                "HEAD"))))
-
-  (defun org-release ()
-    "The release version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (string-remove-prefix
-        "release_"
-        (git-run "describe"
-                 "--match=release\*"
-                 "--abbrev=0"
-                 "HEAD")))))
-
-  (provide 'org-version))
- #+end_src
-
-*** Org Configuration
-Load org, nothing fancy
- #+begin_src emacs-lisp
-(use-package org
-  :mode ("\\.org\\'" . org-mode))
- #+end_src
-
-We also want to generate the table of contents
-#+begin_src emacs-lisp
-(with-eval-after-load "org"
-  (use-package toc-org
-    :hook ((org-mode) . toc-org-mode)))
-#+end_src
-
 ** Compiling this File
 A function to rebuild this file if it's changed since the last time it was built.
 #+begin_src emacs-lisp
-(when (require 'org nil t)
+(with-eval-after-load "org"
   (defun mkyle/rebuild-init-file ()
     "Rebuild init file if it's changed since the last time it was built."
     (interactive)
@@ -251,39 +198,27 @@ A function to rebuild this file if it's changed since the last time it was built
         t))))
 #+end_src
 
-Check for changes. If there are then load the new file and stop load this file.
-#+begin_src emacs-lisp
-(when (and (functionp 'mkyle/rebuild-init-file)
-           (mkyle/rebuild-init-file))
-  (load (expand-file-name "init.elc" user-emacs-directory))
-  (error (concat "Loaded from dirty config. "
-                 "This isn't likely to cause problems and should be "
-                 "fix when emacs is restarted. "
-                 "Thought you aught to know.")))
-#+end_src
-
-***** TODO Recompile on save rather than startup
-***** TODO Script to Build from Stock Emacs
-
-* Manage Config Directory
-** No Litter
-Keep =~/.emacs.d= clean. some libraries create variable files and/or additional configuration files
-in the emacs user directory; no-littering puts most of these files in =~/.emacs.d/var= and =~/.emacs.d/etc=
-respectively.
-#+begin_src emacs-lisp
-(use-package no-littering)
-#+end_src
-
-** Custom
-Use a separate file for custom modifications so they are not overwritten in init.el
-#+begin_src emacs-lisp
-(with-eval-after-load "no-littering"
-  (setq-default custom-file (expand-file-name "custom.el" no-littering-etc-directory))
-  (when (file-exists-p custom-file)
-    (load custom-file t)))
-#+end_src
+***** TODO Recompile on save
 
 * Look And Feel
+** Manage Config Directory
+*** No Litter
+ Keep =~/.emacs.d= clean. some libraries create variable files and/or additional configuration files
+ in the emacs user directory; no-littering puts most of these files in =~/.emacs.d/var= and =~/.emacs.d/etc=
+ respectively.
+ #+begin_src emacs-lisp
+ (use-package no-littering)
+ #+end_src
+
+*** Custom
+ Use a separate file for custom modifications so they are not overwritten in init.el
+ #+begin_src emacs-lisp
+ (with-eval-after-load "no-littering"
+   (setq-default custom-file (expand-file-name "custom.el" no-littering-etc-directory))
+   (when (file-exists-p custom-file)
+     (load custom-file t)))
+ #+end_src
+
 ** Mode Line
 The modeline displays information about the buffer like buffer name and what modes are currently active between the window and the minibuffer
 
@@ -541,7 +476,7 @@ by other packages (like ibuffer-projectile)
                 (ibuffer-dynamic-groups t)))))
 #+end_src
 
-*** Helpful Suggestions - Ido
+*** List Options When Doing Things - Ido
 Better interactive mini-buffer menus. highly recommend
 See [[http://ergoemacs.org/emacs/emacs_ido_mode.html][ergomacs ido tutorial]]
 
@@ -588,6 +523,12 @@ A set of commands for editing files as part of a project
   :config (progn
             (projectile-mode t)
             (global-set-key (kbd "C-c p") projectile-command-map)))
+#+end_src
+
+Enable projectile for version controlled files
+#+begin_src emacs-lisp
+(defadvice vc-mode (after enable-projectile (&optional arg) activate)
+  (projectile-mode arg))
 #+end_src
 
 **** Projectile IBuffer Groups
@@ -767,6 +708,56 @@ I like the "glass editing window" effect. This sets it that way by default and g
 ***** TODO Emojis
 
 * Major Modes
+** Org Mode
+ Org mode is used to build this document.
+
+*** straight.el Workaround
+Because straight.el can't properly compile org yet, we need to define the org-version function
+ourselves to prevent the old builtin org from being loaded instead.
+#+begin_src emacs-lisp
+(use-package git)
+(when (require 'git nil t)
+  (defun org-git-version ()
+    "The Git version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (git-run "describe"
+                "--match=release\*"
+                "--abbrev=6"
+                "HEAD"))))
+
+  (defun org-release ()
+    "The release version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (string-remove-prefix
+        "release_"
+        (git-run "describe"
+                 "--match=release\*"
+                 "--abbrev=0"
+                 "HEAD")))))
+
+  (provide 'org-version))
+ #+end_src
+
+*** Org Packages
+Load org, nothing fancy
+ #+begin_src emacs-lisp
+(use-package org
+  :mode ("\\.org\\'" . org-mode))
+ #+end_src
+
+Generating table of contents in org files with =:TOC:= tag
+#+begin_src emacs-lisp
+(with-eval-after-load "org"
+  (use-package toc-org
+    :hook ((org-mode) . toc-org-mode)))
+#+end_src
+
 ** Git
 A version control tool created by Linus Torvalds
 
@@ -1123,48 +1114,12 @@ and document it.
     ;; TODO get windmove integration working better
     (when (require 'windmove nil t)
       (use-package framemove
-  :config (progn ;; windmove with framemove integration
-      (defun wm/frame-move (dir)
-        (pcase dir
-          ('up (fm-up-frame))
-          ('down (fm-down-frame))
-          ('left (fm-left-frame))
-          ('right (fm-right-frame))))
+        :config (setq framemove-hook-into-windmove t)))
 
-      (defun wm/do-window-select (dir &optional arg window)
-        "Move to the window at direction DIR.
-DIR, ARG, and WINDOW are handled as by `windmove-other-window-loc'.
-If no window is at direction DIR, an error is signaled."
-        (let ((other-window (windmove-find-other-window dir arg window)))
-          (cond ((null other-window)
-           (wm/frame-move dir))
-          ((and (window-minibuffer-p other-window)
-          (not (minibuffer-window-active-p other-window)))
-           (wm/frame-move dir))
-          (t
-           (select-window other-window)))))
-
-      (defun wm/move-left (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'left arg))
-
-      (defun wm/move-up (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'up arg))
-
-      (defun wm/move-right (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'right arg))
-
-      (defun wm/move-down (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'down arg))
-
-      (exwm-input-set-key (kbd "s-<left>") #'wm/move-left)
-      (exwm-input-set-key (kbd "s-<right>") #'wm/move-right)
-      (exwm-input-set-key (kbd "s-<up>") #'wm/move-up)
-      (exwm-input-set-key (kbd "s-<down>") #'wm/move-down))))
-
+    (exwm-input-set-key (kbd "s-<left>") #'windmove-left)
+    (exwm-input-set-key (kbd "s-<right>") #'windmove-right)
+    (exwm-input-set-key (kbd "s-<up>") #'windmove-up)
+    (exwm-input-set-key (kbd "s-<down>") #'windmove-down)
 
     (defun wm/insert (string)
       "Send `string' to clipboard and then send C-v to application to hopefully

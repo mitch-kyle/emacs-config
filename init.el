@@ -23,42 +23,7 @@
 (setq straight-use-package-by-default t)
 (straight-use-package 'use-package)
 
-(use-package git)
-(when (require 'git nil t)
-  (defun org-git-version ()
-    "The Git version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (git-run "describe"
-                "--match=release\*"
-                "--abbrev=6"
-                "HEAD"))))
-
-  (defun org-release ()
-    "The release version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (string-remove-prefix
-        "release_"
-        (git-run "describe"
-                 "--match=release\*"
-                 "--abbrev=0"
-                 "HEAD")))))
-
-  (provide 'org-version))
-
-(use-package org
-  :mode ("\\.org\\'" . org-mode))
-
 (with-eval-after-load "org"
-  (use-package toc-org
-    :hook ((org-mode) . toc-org-mode)))
-
-(when (require 'org nil t)
   (defun mkyle/rebuild-init-file ()
     "Rebuild init file if it's changed since the last time it was built."
     (interactive)
@@ -70,14 +35,6 @@ Inserted by installing org-mode or when a release is made."
         (org-babel-tangle-file source-file generated-file "emacs-lisp")
         (byte-compile-file generated-file)
         t))))
-
-(when (and (functionp 'mkyle/rebuild-init-file)
-           (mkyle/rebuild-init-file))
-  (load (expand-file-name "init.elc" user-emacs-directory))
-  (error (concat "Loaded from dirty config. "
-                 "This isn't likely to cause problems and should be "
-                 "fix when emacs is restarted. "
-                 "Thought you aught to know.")))
 
 (use-package no-littering)
 
@@ -259,6 +216,9 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
             (projectile-mode t)
             (global-set-key (kbd "C-c p") projectile-command-map)))
 
+(defadvice vc-mode (after enable-projectile (&optional arg) activate)
+  (projectile-mode arg))
+
 (with-eval-after-load "projectile"
   (with-eval-after-load "ibuffer-dynamic-groups"
     (use-package ibuffer-projectile
@@ -341,6 +301,41 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
         '(100 . 100))))
 
   (set-frame-parameter nil 'alpha '(95 . 95)))
+
+(use-package git)
+(when (require 'git nil t)
+  (defun org-git-version ()
+    "The Git version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (git-run "describe"
+                "--match=release\*"
+                "--abbrev=6"
+                "HEAD"))))
+
+  (defun org-release ()
+    "The release version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (string-remove-prefix
+        "release_"
+        (git-run "describe"
+                 "--match=release\*"
+                 "--abbrev=0"
+                 "HEAD")))))
+
+  (provide 'org-version))
+
+(use-package org
+  :mode ("\\.org\\'" . org-mode))
+
+(with-eval-after-load "org"
+  (use-package toc-org
+    :hook ((org-mode) . toc-org-mode)))
 
 (use-package magit
   :defer t
@@ -589,48 +584,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     ;; TODO get windmove integration working better
     (when (require 'windmove nil t)
       (use-package framemove
-  :config (progn ;; windmove with framemove integration
-      (defun wm/frame-move (dir)
-        (pcase dir
-          ('up (fm-up-frame))
-          ('down (fm-down-frame))
-          ('left (fm-left-frame))
-          ('right (fm-right-frame))))
+        :config (setq framemove-hook-into-windmove t)))
 
-      (defun wm/do-window-select (dir &optional arg window)
-        "Move to the window at direction DIR.
-DIR, ARG, and WINDOW are handled as by `windmove-other-window-loc'.
-If no window is at direction DIR, an error is signaled."
-        (let ((other-window (windmove-find-other-window dir arg window)))
-          (cond ((null other-window)
-           (wm/frame-move dir))
-          ((and (window-minibuffer-p other-window)
-          (not (minibuffer-window-active-p other-window)))
-           (wm/frame-move dir))
-          (t
-           (select-window other-window)))))
-
-      (defun wm/move-left (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'left arg))
-
-      (defun wm/move-up (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'up arg))
-
-      (defun wm/move-right (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'right arg))
-
-      (defun wm/move-down (&optional arg)
-  (interactive "P")
-  (wm/do-window-select 'down arg))
-
-      (exwm-input-set-key (kbd "s-<left>") #'wm/move-left)
-      (exwm-input-set-key (kbd "s-<right>") #'wm/move-right)
-      (exwm-input-set-key (kbd "s-<up>") #'wm/move-up)
-      (exwm-input-set-key (kbd "s-<down>") #'wm/move-down))))
-
+    (exwm-input-set-key (kbd "s-<left>") #'windmove-left)
+    (exwm-input-set-key (kbd "s-<right>") #'windmove-right)
+    (exwm-input-set-key (kbd "s-<up>") #'windmove-up)
+    (exwm-input-set-key (kbd "s-<down>") #'windmove-down)
 
     (defun wm/insert (string)
       "Send `string' to clipboard and then send C-v to application to hopefully
