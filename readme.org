@@ -519,16 +519,9 @@ Switch windows in the direct of the arrow keys. (s-<arrow>). (s-x <arrow>) in th
 A set of commands for editing files as part of a project
 #+begin_src emacs-lisp
 (use-package projectile
-  :defer t
   :config (progn
             (projectile-mode t)
             (global-set-key (kbd "C-c p") projectile-command-map)))
-#+end_src
-
-Enable projectile for version controlled files
-#+begin_src emacs-lisp
-(defadvice vc-mode (after enable-projectile (&optional arg) activate)
-  (projectile-mode arg))
 #+end_src
 
 **** Projectile IBuffer Groups

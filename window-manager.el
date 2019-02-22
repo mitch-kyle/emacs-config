@@ -165,12 +165,12 @@ may or may not spawn an x window"
 (exwm-input-set-key (kbd "s-x v")             'wm/volume-manager)
 (exwm-input-set-key (kbd "s-x l")             'wm/lock)
 (exwm-input-set-key (kbd "s-x <return>")      'wm/tmux-shell-here)
-(exwm-input-set-key (kbd "s-<return>")        'wm/term)
+(exwm-input-set-key (kbd "s-<return>")        'wm/tmux)
 (exwm-input-set-key (kbd "<XF86Launch1>")     'wm/scrot)
 (exwm-input-set-key (kbd "<XF86ScreenSaver>") 'wm/lock)
 
 ;; Music
-(exwm-input-set-key (kbd "s-x m")         'wm/music-manager)
+(exwm-input-set-key (kbd "s-x m")           'wm/music-manager)
 (exwm-input-set-key (kbd "s-x M-<down>")    'wm/music-toggle)
 (exwm-input-set-key (kbd "s-x M-<left>")    'wm/music-prev)
 (exwm-input-set-key (kbd "s-x M-<right>")   'wm/music-next)

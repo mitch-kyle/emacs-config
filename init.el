@@ -216,13 +216,9 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     (global-set-key (kbd "s-x <down>")  'windmove-down)))
 
 (use-package projectile
-  :defer t
   :config (progn
             (projectile-mode t)
             (global-set-key (kbd "C-c p") projectile-command-map)))
-
-(defadvice vc-mode (after enable-projectile (&optional arg) activate)
-  (projectile-mode arg))
 
 (with-eval-after-load "projectile"
   (with-eval-after-load "ibuffer-dynamic-groups"
@@ -517,9 +513,7 @@ Inserted by installing org-mode or when a release is made."
   :if window-system
   :defer t
   :config
-  (org-babel-load-file
-   (expand-file-name "window-manager.org"
-                     user-emacs-directory)
-   t))
+  (load (expand-file-name "window-manager"
+                          user-emacs-directory)))
 
 ;; init.el ends here
