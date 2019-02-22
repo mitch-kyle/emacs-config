@@ -5,8 +5,6 @@
 
 (setq-default gc-cons-threshold 104857600)
 
-(server-start)
-
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -205,10 +203,17 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                      ;; disable ido faces to see flx highlights
                      (setq ido-use-faces nil)))))
 
-(global-set-key [s-left]  'windmove-left)
-(global-set-key [s-right] 'windmove-right)
-(global-set-key [s-up]    'windmove-up)
-(global-set-key [s-down]  'windmove-down)
+(if window-system
+    (progn
+      (global-set-key [s-left]  'windmove-left)
+      (global-set-key [s-right] 'windmove-right)
+      (global-set-key [s-up]    'windmove-up)
+      (global-set-key [s-down]  'windmove-down))
+  (progn
+    (global-set-key (kbd "s-x <left>")  'windmove-left)
+    (global-set-key (kbd "s-x <right>") 'windmove-right)
+    (global-set-key (kbd "s-x <up>")    'windmove-up)
+    (global-set-key (kbd "s-x <down>")  'windmove-down)))
 
 (use-package projectile
   :defer t
@@ -507,204 +512,14 @@ Inserted by installing org-mode or when a release is made."
 (use-package terraform-mode
   :mode ("\\.tf\\'" "\\.tvars\\'"))
 
-(defmacro wm/define-launcher (fun-name command-and-args)
-      "Define an interactive function that invokes the shell command given"
-      `(defun ,fun-name ()
-   (interactive)
-   (start-process-shell-command "" nil ,command-and-args)))
-
 (use-package exwm
   ;; TODO find test for emacs on root window to put here
   :if window-system
   :defer t
   :config
-  (progn
-    (require 'exwm-config)
-    (require 'exwm-randr)
-    (require 'exwm-systemtray)
-
-    (with-eval-after-load "ibuffer-dynamic-groups"
-  (ibuffer-dynamic-groups-add (lambda (groups)
-              (append '(("X Windows" (mode . exwm-mode)))
-                groups))
-            '((name . exwm-group)
-              (depth . -10))))
-
-    ;; Dialog boxes do not work with exwm
-    (setq use-dialog-box nil)
-    (setq display-time-day-and-date t)
-    (setq exwm-workspace-show-all-buffers t)
-    (setq exwm-layout-show-all-buffers t)
-
-    (defvar wm/tmux-session-name "0")
-
-    (defun wm/no-op ()
-      "Used to suppress warnings for shortcut keys that already work in hardware"
-      (interactive))
-
-    ;; Launchers
-
-    (defun wm/run-sh-async (command)
-      "Interactive prompt to run a shell command in a child process which may or may not spawn an x window"
-      (interactive (list (read-shell-command "$ ")))
-      (start-process-shell-command "" nil command))
-
-    (defun wm/run-tmux (command)
-      "Run a command in a new window of the tmux session"
-      (interactive (list (read-shell-command "[tmux]$ ")))
-      (start-process-shell-command ""
-     nil
-     (concat "terminator -e 'tmux new-session -AD -c $HOME -s "
-       wm/tmux-session-name
-       "\\; new-window -c $(pwd) \""
-       command
-       "\"'")))
-
-
-    (wm/define-launcher wm/browser (or (getenv "X_BROWSER")
-         "firefox"))
-    (wm/define-launcher wm/tmux-shell-here (concat "terminator -e 'tmux new-session -AD -c $HOME -s \""
-         wm/tmux-session-name
-         "\" \\; new-window -c $(pwd) /usr/bin/zsh'"))
-    (wm/define-launcher wm/term (concat "terminator -e 'tmux new-session -AD -c $HOME -s \""
-    wm/tmux-session-name
-    "\"'"))
-    (wm/define-launcher wm/volume-manager "terminator --title Volume -e 'pulsemixer || alsamixer'")
-    (wm/define-launcher wm/volume-up "amixer set Master 5%+")
-    (wm/define-launcher wm/volume-down "amixer set Master 5%-")
-    (wm/define-launcher wm/mute-toggle "amixer set Master toggle")
-    (wm/define-launcher wm/mute-mic "amixer set Mic toggle")
-    (wm/define-launcher wm/scrot "scrot --select --exec 'mv $f ~/Pictures/screenshots'")
-    (wm/define-launcher wm/lock "dm-tool lock")
-    (wm/define-launcher wm/music-toggle "mpc toggle")
-    (wm/define-launcher wm/music-next "mpc next")
-    (wm/define-launcher wm/music-prev "mpc prev")
-    (wm/define-launcher wm/music-manager "terminator -e 'ncmpcpp -s playlist -S visualizer'")
-
-    ;; TODO get windmove integration working better
-    (when (require 'windmove nil t)
-      (use-package framemove
-        :config (setq framemove-hook-into-windmove t)))
-
-    (exwm-input-set-key (kbd "s-<left>") #'windmove-left)
-    (exwm-input-set-key (kbd "s-<right>") #'windmove-right)
-    (exwm-input-set-key (kbd "s-<up>") #'windmove-up)
-    (exwm-input-set-key (kbd "s-<down>") #'windmove-down)
-
-    (defun wm/insert (string)
-      "Send `string' to clipboard and then send C-v to application to hopefully
-trigger the paste operation, `string' will be inserted into the application."
-      (if (derived-mode-p 'exwm-mode)
-    (progn
-      (kill-new string)
-      (dolist (key (string-to-list (kbd "\C-v")))
-  (exwm-input--fake-key key))
-      (setq kill-ring (cdr kill-ring)))
-  (insert string)))
-
-    (defun wm/xrandr-update-outputs ()
-      (let ((connected-monitors (car
-   (read-from-string
-    ;; TODO write in el
-    (shell-command-to-string
-     "xrandr | awk 'BEGIN {print \"(\"}
-    / connected/ {print \"\\\"\" $1 \"\\\"\"}
-    END {print \")\"}'"))))
-      (i -1))
-  (setq exwm-randr-workspace-monitor-plist (cl-reduce (lambda (acc s)
-        (setq i (+ i 1))
-        (append acc (list i s)))
-      connected-monitors
-      :initial-value '()))
-  (setq i (+ i 1))
-  (while (> i (exwm-workspace--count))
-    (exwm-workspace-add))
-  (while (< i (exwm-workspace--count))
-    (exwm-workspace-delete (- (exwm-workspace--count) 1)))))
-
-    (defun wm/rename-buffer ()
-      (interactive)
-      (exwm-workspace-rename-buffer
-
-       (concat exwm-class-name ": "
-   (if (<= (length exwm-title) 50)
-       exwm-title
-     (concat (substring exwm-title 0 49) "...")))))
-
-    (add-hook 'exwm-update-class-hook 'wm/rename-buffer)
-    (add-hook 'exwm-update-title-hook 'wm/rename-buffer)
-
-    (defun wm/xrandr-init ()
-      (add-hook 'exwm-randr-screen-change-hook 'wm/xrandr-update-outputs)
-      (wm/xrandr-update-outputs)
-      (exwm-randr--init))
-
-    (defun wm/xrandr-exit ()
-      (remove-hook 'exwm-randr-screen-change-hook 'wm/xrandr-update-outputs)
-      (exwm-randr--exit))
-
-    (add-hook 'exwm-init-hook #'wm/xrandr-init)
-    (add-hook 'exwm-exit-hook #'wm/xrandr-exit)
-
-    (if (require 'ido nil t)
-        (progn (exwm-input-set-key (kbd "s-x b") #'ido-switch-buffer)
-               (exwm-config-ido))
-      (exwm-config-default))
-
-    (exwm-input-set-key (kbd "s-SPC") #'exwm-input-toggle-keyboard)
-
-    ;; Do stuff
-    (exwm-input-set-key (kbd "s-`") #'wm/run-sh-async)
-    (exwm-input-set-key (kbd "s-!") #'wm/run-tmux)
-    (exwm-input-set-key (kbd "s-x s-x") #'execute-extended-command)
-
-    ;; Navigation
-    (exwm-input-set-key (kbd "M-<tab>") #'previous-buffer)
-    (exwm-input-set-key (kbd "M-<iso-lefttab>") #'next-buffer)
-    (exwm-input-set-key (kbd "M-<left>") #'previous-buffer)
-    (exwm-input-set-key (kbd "M-<right>") #'next-buffer)
-
-    ;; Cheating
-    (exwm-input-set-key (kbd "s-x s-b") #'ibuffer)
-
-    ;; Apps
-    (exwm-input-set-key (kbd "s-x i") #'wm/browser)
-    (exwm-input-set-key (kbd "s-x <return>") #'wm/tmux-shell-here)
-    (exwm-input-set-key (kbd "s-x v") #'wm/volume-manager)
-    (exwm-input-set-key (kbd "s-x l") #'wm/lock)
-    (exwm-input-set-key (kbd "s-l") #'wm/lock)
-    (exwm-input-set-key (kbd "s-<return>") #'wm/term)
-
-    (exwm-input-set-key (kbd "s-x m") #'wm/music-manager)
-    (exwm-input-set-key (kbd "s-x <down>") #'wm/music-toggle)
-    (exwm-input-set-key (kbd "s-x <left>") #'wm/music-prev)
-    (exwm-input-set-key (kbd "s-x <right>") #'wm/music-next)
-
-    (exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") #'wm/volume-up)
-    (exwm-input-set-key (kbd "<XF86AudioLowerVolume>") #'wm/volume-down)
-    (exwm-input-set-key (kbd "<XF86AudioMute>") #'wm/mute-toggle)
-    (exwm-input-set-key (kbd "<XF86AudioMicMute>") #'wm/mute-mic)
-    (exwm-input-set-key (kbd "<XF86AudioPlay>") #'wm/music-toggle)
-    (exwm-input-set-key (kbd "<XF86AudioNext>") #'wm/music-next)
-    (exwm-input-set-key (kbd "<XF86AudioPrev>") #'wm/music-prev)
-    (exwm-input-set-key (kbd "<XF86Launch1>") #'wm/scrot)
-    (exwm-input-set-key (kbd "<XF86ScreenSaver>") #'wm/lock)
-    (exwm-input-set-key (kbd "<XF86LaunchA>") #'wm/music-toggle)
-    (exwm-input-set-key (kbd "<XF86Search>") #'wm/music-prev)
-    (exwm-input-set-key (kbd "<XF86Explorer>") #'wm/music-next)
-
-    ;; These work in hardware so don't need warning about undefined
-    (exwm-input-set-key (kbd "<XF86MonBrightnessDown>") #'wm/no-op)
-    (exwm-input-set-key (kbd "<XF86MonBrightnessUp>") #'wm/no-op)
-    (exwm-input-set-key (kbd "<XF86Sleep>") #'wm/no-op)
-    (exwm-input-set-key (kbd "<XF86WLAN>") #'wm/no-op)
-
-    ;; Keybind to send emacs bound keys to x window while in line mode
-    (exwm-input-set-key (kbd "C-q") #'exwm-input-send-next-key)
-
-    (display-time-mode t)
-    (display-battery-mode t)
-    (exwm-systemtray-enable)
-    (exwm-enable)))
+  (org-babel-load-file
+   (expand-file-name "window-manager.org"
+                     user-emacs-directory)
+   t))
 
 ;; init.el ends here
