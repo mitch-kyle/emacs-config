@@ -5,6 +5,8 @@
 
 (setq-default gc-cons-threshold 104857600)
 
+(defalias 'yes-or-no-p 'y-or-n-p)
+
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -22,30 +24,42 @@
 (straight-use-package 'use-package)
 
 (with-eval-after-load "org"
-  (defun mkyle/rebuild-init-file ()
-    "Rebuild init file if it's changed since the last time it was built."
-    (interactive)
-    (let ((source-file    (expand-file-name "readme.org" user-emacs-directory))
-          (generated-file (expand-file-name "init.el" user-emacs-directory)))
-      (when (org-file-newer-than-p source-file
+  (defun mkyle/--tangle-compile-elisp-file (source-file generated-file)
+    (when (org-file-newer-than-p source-file
                                    (file-attribute-modification-time
                                     (file-attributes generated-file)))
         (org-babel-tangle-file source-file generated-file "emacs-lisp")
-        (byte-compile-file generated-file)
-        t))))
+        (byte-compile-file generated-file)))
+
+  (defun mkyle/rebuild-init-file ()
+    "Rebuild init file if it's changed since the last time it was built."
+    (interactive)
+    (mkyle/--tangle-compile-elisp-file (expand-file-name "readme.org"
+                                                         user-emacs-directory)
+                                       (expand-file-name "init.el"
+                                                         user-emacs-directory))
+    (mkyle/--tangle-compile-elisp-file (expand-file-name "window-manager.org"
+                                                         user-emacs-directory)
+                                       (expand-file-name "window-manager.el"
+                                                         user-emacs-directory))
+    (byte-compile-file custom-file)))
 
 (use-package no-littering)
 
 (with-eval-after-load "no-littering"
-  (setq-default custom-file (expand-file-name "custom.el" no-littering-etc-directory))
-  (when (file-exists-p custom-file)
-    (load custom-file t)))
+  (let ((base-custom-file (expand-file-name "custom" no-littering-etc-directory)))
+    (setq-default custom-file (concat base-custom-file ".el"))
+    (load base-custom-file t)))
+
+(defadvice custom-save-all (after mkyle/recompile-custom-file-on-save () activate)
+  "Recompile custom files after saving to it"
+  (byte-compile-file custom-file))
 
 (use-package diminish :defer t)
 
 (use-package anzu
   :diminish anzu-mode
-  :config (global-anzu-mode))
+  :config (global-anzu-mode t))
 
 (size-indication-mode t)
 
@@ -110,20 +124,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (global-auto-revert-mode t)
 
-(when (require 'savehist nil t)
-  (setq savehist-additional-variables
-        '(search-ring regexp-search-ring)
-        ;; save every minute
-        savehist-autosave-interval 60)
-        (savehist-mode +1))
-
-;; smex, remember recently and most frequently used commands
-(with-eval-after-load "ido"
-  (use-package smex
-    :config (progn
-              (smex-initialize)
-              (global-set-key (kbd "M-x") 'smex)
-              (global-set-key (kbd "M-X") 'smex-major-mode-commands))))
+(defvar personal-keybindings (make-sparse-keymap))
+(use-package smex
+  :after ido
+  :bind (("M-x" . smex)
+          ("M-X" . smex-major-mode-commands))
+  :config (smex-initialize))
 
 (defun mkyle/split-window (&optional window)
   "Split window more senibly.  WINDOW."
@@ -169,18 +175,17 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 (with-eval-after-load "ibuffer"
   (setq ibuffer-show-empty-filter-groups nil)
 
-  (with-eval-after-load "straight"
-    (use-package ibuffer-dynamic-groups
+  (use-package ibuffer-dynamic-groups
       :straight (ibuffer-dynamic-groups :type git
-      :host github
-      :repo "mitch-kyle/ibuffer-dynamic-groups")
+                                        :host github
+                                        :repo "mitch-kyle/ibuffer-dynamic-groups")
       :config (progn
                 (ibuffer-dynamic-groups-add
                  (lambda (groups)
                    (append groups
                            '(("System" (name . "^\\*.*\\*$")))))
                  '((name . system-group)))
-                (ibuffer-dynamic-groups t)))))
+                (ibuffer-dynamic-groups t))))
 
 (use-package ido
   :config
@@ -192,16 +197,18 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
           ido-max-prospects                      10
           ido-default-file-method                'selected-window
           ido-auto-merge-work-directories-length -1)
-    (ido-mode +1)
+    (ido-mode +1)))
 
-    (use-package ido-completing-read+
-      :config (ido-ubiquitous-mode +1))
+(use-package ido-completing-read+
+  :after ido
+  :config (ido-ubiquitous-mode +1))
 
-    ;; smarter fuzzy matching for ido
-    (use-package flx-ido
-      :config (progn (flx-ido-mode +1)
-                     ;; disable ido faces to see flx highlights
-                     (setq ido-use-faces nil)))))
+;; smarter fuzzy matching for ido
+(use-package flx-ido
+  :after ido
+  :config (progn (flx-ido-mode +1)
+                 ;; disable ido faces to see flx highlights
+                 (setq ido-use-faces nil)))
 
 (if window-system
     (progn
@@ -210,28 +217,28 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
       (global-set-key [s-up]    'windmove-up)
       (global-set-key [s-down]  'windmove-down))
   (progn
-    (global-set-key (kbd "s-x <left>")  'windmove-left)
-    (global-set-key (kbd "s-x <right>") 'windmove-right)
-    (global-set-key (kbd "s-x <up>")    'windmove-up)
-    (global-set-key (kbd "s-x <down>")  'windmove-down)))
+    (global-set-key (kbd "C-c <left>")  'windmove-left)
+    (global-set-key (kbd "C-c <right>") 'windmove-right)
+    (global-set-key (kbd "C-c <up>")    'windmove-up)
+    (global-set-key (kbd "C-c <down>")  'windmove-down)))
 
 (use-package projectile
   :config (progn
-            (projectile-mode t)
-            (global-set-key (kbd "C-c p") projectile-command-map)))
+            (setq-default projectile-mode-line-prefix "")
+            (global-set-key (kbd "C-c p") projectile-command-map)
+            (projectile-mode t)))
 
-(with-eval-after-load "projectile"
-  (with-eval-after-load "ibuffer-dynamic-groups"
-    (use-package ibuffer-projectile
-      :config
-      (progn
-        (setq ibuffer-projectile-prefix "- ")
-        (ibuffer-dynamic-groups-add
-         (lambda (groups)
-           (append (ibuffer-projectile-generate-filter-groups)
-                   groups))
-         '((name . projectile-groups)
-           (depth . -50)))))))
+(use-package ibuffer-projectile
+  :after (:all projectile ibuffer-dynamic-groups)
+  :config
+  (progn
+    (setq ibuffer-projectile-prefix "- ")
+    (ibuffer-dynamic-groups-add
+     (lambda (groups)
+       (append (ibuffer-projectile-generate-filter-groups)
+               groups))
+     '((name . projectile-groups)
+       (depth . -50)))))
 
 (with-eval-after-load "tramp"
   (setq tramp-default-method "ssh"))
@@ -251,7 +258,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
               tab-width         4
               tab-always-indent 'complete)
 
-(add-hook 'before-save-hook #'whitespace-cleanup)
+(add-hook 'before-save-hook 'whitespace-cleanup)
 
 (use-package company
   :diminish company-mode
@@ -271,21 +278,48 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
               query-replace-highlight t)
 
 (show-paren-mode t)
-(set-face-foreground 'show-paren-match "DimGrey")
 
 (use-package rainbow-mode
   :defer t
+  :commands rainbow-mode
   :diminish rainbow-mode)
+
+(use-package flyspell
+  :commands flyspell-mode
+  :diminish flyspell-mode
+  :config
+  (setq-default flyspell-issue-welcome-flag nil
+                flyspell-issue-message-flag nil
+                ispell-program-name         "/usr/bin/aspell"
+                ispell-list-command         "list"))
+
+(use-package yasnippet
+  :bind (:map yas-minor-mode-map
+         ("C-`" . yas-expand)
+         ("C-/" . yas-insert-snippet))
+  :commands yas-minor-mode)
+
+(use-package yasnippet-snippets
+  :after yasnippets)
 
 (use-package monokai-theme
   :if window-system
-  :config (progn (load-theme 'monokai t)
-                 (set-face-foreground 'show-paren-match "DimGrey")))
+  :config (load-theme 'monokai t))
 
 (use-package spaceline
   :if window-system
-  :config (progn (setq powerline-default-separator 'contour)
-                 (spaceline-emacs-theme)))
+  :config
+  (progn
+    (setq powerline-default-separator 'contour
+          spaceline-minor-modes-separator "∙")
+
+    (spaceline-define-segment projectile
+      :when projectile-mode
+      :enabled t
+      :priority 2000
+      (projectile-default-mode-line))
+
+    (spaceline-emacs-theme)))
 
 (when window-system
   (setq-default window-divider-default-right-width 1)
@@ -332,15 +366,17 @@ Inserted by installing org-mode or when a release is made."
   (provide 'org-version))
 
 (use-package org
-  :mode ("\\.org\\'" . org-mode))
+  :mode ("\\.org\\'" . org-mode)
+  :config (progn (add-hook 'org-mode-hook 'flyspell-mode)
+                 (add-hook 'org-mode-hook 'yas-minor-mode)))
 
-(with-eval-after-load "org"
-  (use-package toc-org
-    :hook ((org-mode) . toc-org-mode)))
+(use-package toc-org
+  :after org
+  :hook ((org-mode) . toc-org-mode))
 
 (use-package magit
   :defer t
-  :config (global-set-key (kbd "C-c m") 'magit-status))
+  :config (global-set-key (kbd "C-x g") 'magit-status))
 
 (use-package git-modes
   :defer t)
@@ -381,10 +417,10 @@ Inserted by installing org-mode or when a release is made."
 
 ;; Technically a window management suite but it'll do to return the
 ;; window to normal after an ediff session
-(use-package winner
-  :config (progn (winner-mode +1)
-                 (with-eval-after-load "ediff"
-                   (add-hook 'ediff-cleanup-hook 'winner-undo))))
+(with-eval-after-load "ediff"
+  (use-package winner
+    :hook ((ediff-cleanup) . winner-undo)
+    :config (winner-mode +1)))
 
 (with-eval-after-load "erc"
   (setq erc-query-display 'buffer
@@ -441,13 +477,12 @@ Inserted by installing org-mode or when a release is made."
 
 (use-package cider
   :defer t
-  :config (progn
-            (setq nrepl-log-messages t)
-            (add-hook 'cider-mode-hook #'eldoc-mode)
-            (add-hook 'cider-repl-mode-hook #'subword-mode)
-            (add-hook 'cider-repl-mode-hook #'rainbow-delimiters-mode)
-            (add-hook 'cider-repl-mode-hook #'company-mode)
-            (add-hook 'cider-mode-hook #'company-mode)
+    :config (progn
+            (setq nrepl-log-messages                   t
+                  cider-inject-dependencies-at-jack-in t)
+            (add-hook 'cider-mode-hook      'eldoc-mode)
+            (add-hook 'cider-repl-mode-hook 'subword-mode)
+            (add-hook 'cider-repl-mode-hook 'rainbow-delimiters-mode)
 
             (with-eval-after-load "ibuffer-dynamic-groups"
               (ibuffer-dynamic-groups-add
@@ -459,7 +494,8 @@ Inserted by installing org-mode or when a release is made."
                  (depth . -1))))))
 
 (use-package cmake-mode
-  :mode ("CMakeLists\\.txt\\'" "\\.cmake\\'"))
+  :mode ("CMakeLists\\.txt\\'" "\\.cmake\\'")
+  :config (add-hook 'cmake-mode-hook 'yas-minor-mode))
 
 (use-package js2-mode
   :mode ("\\.js\\'" "\\.pac\\'")
@@ -485,7 +521,9 @@ Inserted by installing org-mode or when a release is made."
   :mode ("\\.yaml\\'" "\\.yml\\'"))
 
 (use-package markdown-mode
-  :mode ("\\.md\\'" "\\.markdown\\'"))
+  :mode ("\\.md\\'" "\\.markdown\\'")
+  :config (progn (add-hook 'markdown-mode-hook 'flyspell-mode)
+                 (add-hook 'markdown-mode-hook 'yas-minor-mode)))
 
 (use-package lua-mode
   :mode "\\.lua\\'")
@@ -511,6 +549,7 @@ Inserted by installing org-mode or when a release is made."
 (use-package exwm
   ;; TODO find test for emacs on root window to put here
   :if window-system
+  :commands exwm-init
   :defer t
   :config
   (load (expand-file-name "window-manager"

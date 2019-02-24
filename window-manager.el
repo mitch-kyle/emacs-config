@@ -50,9 +50,9 @@
 (add-hook 'exwm-init-hook #'wm/xrandr-init)
 (add-hook 'exwm-exit-hook #'wm/xrandr-exit)
 
-(with-eval-after-load "windmove"
-  (use-package framemove
-    :config (setq framemove-hook-into-windmove t)))
+(use-package framemove
+  :after windmove
+  :config (setq framemove-hook-into-windmove t))
 
 (exwm-input-set-key (kbd "s-<left>") #'windmove-left)
 (exwm-input-set-key (kbd "s-<right>") #'windmove-right)
@@ -76,10 +76,10 @@
 (require 'exwm-systemtray)
 (exwm-systemtray-enable)
 
-(display-battery-mode t)
-
 (setq display-time-day-and-date t)
 (display-time-mode t)
+
+(display-battery-mode t)
 
 (with-eval-after-load "ibuffer-dynamic-groups"
   (ibuffer-dynamic-groups-add (lambda (groups)
@@ -193,3 +193,5 @@ may or may not spawn an x window"
 (exwm-input-set-key (kbd "<XF86MonBrightnessUp>")   (lambda () (interactive)))
 (exwm-input-set-key (kbd "<XF86Sleep>")             (lambda () (interactive)))
 (exwm-input-set-key (kbd "<XF86WLAN>")              (lambda () (interactive)))
+
+;;; window-manager.el ends here

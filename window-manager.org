@@ -1,3 +1,6 @@
+#+TITLE: Window Manager - EXWM Configuration
+#+AUTHOR: Mitch Kyle
+
 * Just, Why?
 The exwm package allows you to use emacs as a window manager if it's ran as the
 root X window.I started using it for laugh then it became not a joke. Basically,
@@ -5,9 +8,10 @@ one day I walked into emacs and didn't walk out.
 
 ** Compile This File
 in emacs:
-#+begin_src
+#+BEGIN_EXAMPLE
 C-u M-x org-babel-load-file RET path/to/window-manager.org
-#+end_src
+#+END_EXAMPLE
+
 * Table Of Contents :TOC_3:
 - [[#just-why][Just, Why?]]
   - [[#compile-this-file][Compile This File]]
@@ -20,8 +24,8 @@ C-u M-x org-babel-load-file RET path/to/window-manager.org
   - [[#buffer-names][Buffer Names]]
   - [[#system-tray][System Tray]]
   - [[#modeline][Modeline]]
-    - [[#battery][Battery]]
     - [[#date-and-time][Date and Time]]
+    - [[#battery][Battery]]
   - [[#ibuffer-group][IBuffer Group]]
 - [[#applications][Applications]]
   - [[#launching-applications][Launching Applications]]
@@ -33,21 +37,22 @@ C-u M-x org-babel-load-file RET path/to/window-manager.org
   - [[#taking-screenshots][Taking Screenshots]]
   - [[#screen-lock][Screen Lock]]
 - [[#keybindings][Keybindings]]
+- [[#footer][Footer]]
 
 * Header
 Enable lexical binding and print generated file disclaimer
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 ;;; window-manager.el --- exwm configuration -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;; This file was generated. do not edit. changes may be overwritten
 ;;; Code:
-#+end_src
+#+END_SRC
 
 * Guts
 ** Initial Configuration
 This loads up all the builtin configuration in the library.
 Use the ido flavour if ido is available.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (require 'exwm)
 (require 'exwm-config)
 (require 'server)
@@ -61,11 +66,11 @@ Use the ido flavour if ido is available.
   (server-start))
 
 (exwm-enable)
-#+end_src
+#+END_SRC
 
 ** Multiple Monitors
  Automatically create new workspaces when monitors are added or removed.
- #+begin_src emacs-lisp
+ #+BEGIN_SRC emacs-lisp :tangle yes
 (require 'exwm-randr)
 (require 'seq)
 (defun wm/xrandr-update-outputs ()
@@ -98,39 +103,39 @@ Use the ido flavour if ido is available.
 
 (add-hook 'exwm-init-hook #'wm/xrandr-init)
 (add-hook 'exwm-exit-hook #'wm/xrandr-exit)
- #+end_src
+ #+END_SRC
 
 **** TODO Remove use of awk, use elisp
 
 *** Navigate Between Monitors
 Since workspace are just frames we can move between them the magic library
 called framemove which hooks into windmove and works pretty seamlessly.
-#+begin_src emacs-lisp
-(with-eval-after-load "windmove"
-  (use-package framemove
-    :config (setq framemove-hook-into-windmove t)))
-#+end_src
+#+BEGIN_SRC emacs-lisp :tangle yes
+(use-package framemove
+  :after windmove
+  :config (setq framemove-hook-into-windmove t))
+#+END_SRC
 
 Also make sure windmove bindings are avilable in exwm buffers
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (exwm-input-set-key (kbd "s-<left>") #'windmove-left)
 (exwm-input-set-key (kbd "s-<right>") #'windmove-right)
 (exwm-input-set-key (kbd "s-<up>") #'windmove-up)
 (exwm-input-set-key (kbd "s-<down>") #'windmove-down)
-#+end_src
+#+END_SRC
 
 *** Move Buffers Between Monitors
 We're not gonna use workspaces for anything besides multimonitor support
 so disable workspace isolation.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (setq exwm-workspace-show-all-buffers t
       exwm-layout-show-all-buffers    t)
-#+end_src
+#+END_SRC
 
 ** Buffer Names
 Having a bunch of buffers named EXWM isn't helpful so let's make it the xwindow
 title. Don't ask me why this isn't the default behaviour.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (defun wm/rename-buffer ()
   (interactive)
   (exwm-workspace-rename-buffer
@@ -141,51 +146,51 @@ title. Don't ask me why this isn't the default behaviour.
 
 (add-hook 'exwm-update-class-hook 'wm/rename-buffer)
 (add-hook 'exwm-update-title-hook 'wm/rename-buffer)
-#+end_src
+#+END_SRC
 
 ** System Tray
 Show the system tray in the bottom right corner.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (require 'exwm-systemtray)
 (exwm-systemtray-enable)
-#+end_src
+#+END_SRC
 
 ** Modeline
 Add some extra information that would normally be in the window manager panel.
 
+*** Date and Time
+Show the date and time
+#+BEGIN_SRC emacs-lisp :tangle yes
+(setq display-time-day-and-date t)
+(display-time-mode t)
+#+END_SRC
+
 *** Battery
 Show the battery level and charging status.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (display-battery-mode t)
-#+end_src
+#+END_SRC
 
 **** TODO Weird Formatting
 display-battery-mode seems to be having trouble some formatting trouble with
- spaceline for some reason but is still useable
-
-*** Date and Time
-Show the date and time
-#+begin_src emacs-lisp
-(setq display-time-day-and-date t)
-(display-time-mode t)
-#+end_src
+ spaceline for some reason but is still usable.
 
 ** IBuffer Group
 It's nice to have all the xwindows in their own ibuffer group so you aren't
  hunting for them.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (with-eval-after-load "ibuffer-dynamic-groups"
   (ibuffer-dynamic-groups-add (lambda (groups)
                                 (append '(("X Windows" (mode . exwm-mode)))
                                         groups))
                               '((name . exwm-group)
                                 (depth . -10))))
-#+end_src
+#+END_SRC
 
 * Applications
 ** Launching Applications
 Gotta be able to launch windows without hanging emacs.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (defmacro wm/define-launcher (fun-name command-and-args)
   "Define an interactive function that invokes the shell command given"
   `(defun ,fun-name ()
@@ -197,14 +202,14 @@ Gotta be able to launch windows without hanging emacs.
 may or may not spawn an x window"
   (interactive (list (read-shell-command "$ ")))
   (start-process-shell-command "" nil command))
-#+end_src
+#+END_SRC
 
 ** Terminal Emulator
 Because eshell doesn't really do it for me.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (defvar wm/terminal-emulator "terminator")
 (defvar wm/preferred-shell "/usr/bin/zsh")
-#+end_src
+#+END_SRC
 
 **** TODO replace terminator
  terminator is old and I don't think maintained anymore. maybe move
@@ -215,7 +220,7 @@ It's dirty but it works. We want to be able to run a command in a new-window
 in our tmux session (create it if needed), launch a new window in the
 directory of the file being edited, and to simply raise the tmux window.
 
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (defvar wm/tmux-session-name "0")
 
 (defun wm/run-tmux (command)
@@ -240,17 +245,17 @@ directory of the file being edited, and to simply raise the tmux window.
 (wm/define-launcher wm/tmux (concat wm/terminal-emulator
                                     " -e 'tmux new-session -AD -c $HOME -s \""
                                     wm/tmux-session-name "\"'"))
-#+end_src
+#+END_SRC
 
 ** Browser
 For browsin...
- #+begin_src emacs-lisp
+ #+BEGIN_SRC emacs-lisp :tangle yes
 (wm/define-launcher wm/browser (or (getenv "X_BROWSER") "firefox"))
-#+end_src
+#+END_SRC
 
 ** Audio Controls
 For dealing wh'cher beepers and y'ur wiretaps and whatnot.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (wm/define-launcher wm/volume-manager
                     (concat wm/terminal-emulator
                             " --title Volume -e 'pulsemixer || alsamixer'"))
@@ -258,33 +263,33 @@ For dealing wh'cher beepers and y'ur wiretaps and whatnot.
 (wm/define-launcher wm/volume-down "amixer set Master 5%-")
 (wm/define-launcher wm/mute-toggle "amixer set Master toggle")
 (wm/define-launcher wm/mute-mic "amixer set Mic toggle")
-#+end_src
+#+END_SRC
 
 ** Music
 Use mpd so your music doesn't stop when x crashes.
 also so it can always go to the wrong output.
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (wm/define-launcher wm/music-toggle "mpc toggle")
 (wm/define-launcher wm/music-next "mpc next")
 (wm/define-launcher wm/music-prev "mpc prev")
 (wm/define-launcher wm/music-manager
                     (concat wm/terminal-emulator
                             " -e 'ncmpcpp -s playlist -S visualizer'"))
-#+end_src
+#+END_SRC
 
 ** Taking Screenshots
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (wm/define-launcher wm/scrot
                     "scrot --select --exec 'mv $f ~/Pictures/screenshots'")
-#+end_src
+#+END_SRC
 
 ** Screen Lock
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 (wm/define-launcher wm/lock "dm-tool lock")
-#+end_src
+#+END_SRC
 
 * Keybindings
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle yes
 ;; Enable or disable other emacs keybindings in exwm windows
 (exwm-input-set-key (kbd "s-SPC") 'exwm-input-toggle-keyboard)
 
@@ -328,4 +333,9 @@ also so it can always go to the wrong output.
 (exwm-input-set-key (kbd "<XF86MonBrightnessUp>")   (lambda () (interactive)))
 (exwm-input-set-key (kbd "<XF86Sleep>")             (lambda () (interactive)))
 (exwm-input-set-key (kbd "<XF86WLAN>")              (lambda () (interactive)))
-#+end_src
+
+#+END_SRC
+* Footer
+#+BEGIN_SRC emacs-lisp :tangle yes
+;;; window-manager.el ends here
+#+END_SRC

@@ -2,6 +2,7 @@
 *.elc
 auto-save-list
 projectile-bookmarks.eld
-straight
+straight/*
+!straight/versions
 var
 eshell
