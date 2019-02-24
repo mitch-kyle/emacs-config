@@ -89,7 +89,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#code-snippets---yasnippets][Code Snippets - yasnippets]]
   - [[#x-windows][X Windows]]
     - [[#colour-scheme][Colour Scheme]]
-    - [[#mode-line-eyecandy---spaceline][Mode Line Eyecandy - Spaceline]]
+    - [[#mode-line-eye-candy---spaceline][Mode Line Eye-candy - Spaceline]]
     - [[#window-divider][Window Divider]]
     - [[#transparency][Transparency]]
 - [[#major-modes][Major Modes]]
@@ -188,7 +188,7 @@ A function to rebuild this project if it's changed since the last time it was bu
         (byte-compile-file generated-file)))
 
   (defun mkyle/rebuild-init-file ()
-    "Rebuild init file if it's changed since the last time it was built."
+    "Rebuild init files if they've changed since the last time it was built."
     (interactive)
     (mkyle/--tangle-compile-elisp-file (expand-file-name "readme.org"
                                                          user-emacs-directory)
@@ -233,7 +233,7 @@ Compile custom file when it changes. it's mostly quoted forms so there might not
 The modeline displays information about the buffer like buffer name and what modes are currently active between the window and the minibuffer
 
 *** Hide Minor Modes
-Modeline is for showing all the active modes. Some of these are not useful so let's hide them.
+Mode line is for showing all the active modes. Some of these are not useful so let's hide them.
 This adds the =:diminish= key to =use-package= which will hide the minor-mode associated with the package.
 #+BEGIN_SRC emacs-lisp
 (use-package diminish :defer t)
@@ -692,7 +692,7 @@ looks horrible on a typical terminal
   :config (load-theme 'monokai t))
 #+END_SRC
 
-*** Mode Line Eyecandy - Spaceline
+*** Mode Line Eye-candy - Spaceline
 Spaceline is a nice looking mode line package based on powerline from the
 [[http://spacemacs.org/][spacemacs]] distribution
 #+BEGIN_SRC emacs-lisp
@@ -700,13 +700,20 @@ Spaceline is a nice looking mode line package based on powerline from the
   :if window-system
   :config
   (progn
-    (setq powerline-default-separator 'contour
-          spaceline-minor-modes-separator "∙")
+    (require 'spaceline)
+    (require 'spaceline-segments)
 
-    ;; TODO Move to the left
+    (setq-default anzu-cons-mode-line-p           nil
+                  powerline-default-separator     'contour
+                  spaceline-minor-modes-separator " ")
+
+    ;; Projectile doesn't really fit with the other minor modes
+    ;; but the menu might be useful. let's move it to it's own
+    ;; segment
     (spaceline-define-segment mkyle/projectile
       "Display project name with projectile menu"
-      (when (projectile-project-root)
+      (when (and (boundp projectile-project-root)
+                 (projectile-project-root))
         (propertize (projectile-project-name)
           'local-map (let ((map (make-sparse-keymap)))
                        (define-key map [mode-line down-mouse-1]
@@ -714,7 +721,53 @@ Spaceline is a nice looking mode line package based on powerline from the
                         map)
           'mouse-face 'mode-line-highlight)))
 
-    (spaceline-emacs-theme 'mkyle/projectile)))
+    (defun mkyle/spaceline-theme (&rest additional-segments)
+      "Spaceline emacs theme with some tweaks"
+      (spaceline-compile
+       `((((((persp-name :fallback workspace-number) window-number)
+            :separator "•")
+           buffer-modified
+           buffer-size)
+          :face highlight-face
+          :priority 100)
+         (anzu :priority 95)
+         auto-compile
+         ((buffer-id remote-host)
+          :priority 98)
+         (major-mode :priority 79)
+         (process :when active)
+         ((flycheck-error flycheck-warning flycheck-info)
+          :when active
+          :priority 89)
+         (minor-modes :when active
+                      :priority 9)
+         (mu4e-alert-segment :when active)
+         (erc-track :when active)
+         (version-control :when active
+                          :priority 78)
+         (mkyle/projectile :priority 20)
+         (org-pomodoro :when active)
+         (org-clock :when active)
+         nyan-cat)
+       `(which-function
+         (python-pyvenv :fallback python-pyenv)
+         (purpose :priority 94)
+         (battery :when active)
+         (selection-info :priority 95)
+         input-method
+         ((point-position line-column)
+          :separator " • "
+          :priority 96)
+         ((buffer-encoding-abbrev)
+          :priority 9)
+         (global :when active)
+         ,@additional-segments
+         (buffer-position :priority 99)
+         (hud :priority 99)))
+      (setq-default mode-line-format
+                    '("%e" (:eval (spaceline-ml-main)))))
+
+    (mkyle/spaceline-theme)))
 #+END_SRC
 
 *** Window Divider
@@ -782,12 +835,12 @@ Inserted by installing org-mode or when a release is made."
 
 *** Org Packages
 Load org, nothing fancy
- #+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp
 (use-package org
   :mode ("\\.org\\'" . org-mode)
   :config (progn (add-hook 'org-mode-hook 'flyspell-mode)
                  (add-hook 'org-mode-hook 'yas-minor-mode)))
- #+END_SRC
+#+END_SRC
 
 Generating table of contents in org files with =:TOC:= tag
 #+BEGIN_SRC emacs-lisp
@@ -898,7 +951,8 @@ Show documentation in the minibuffer for symbol under cursor
 #+BEGIN_SRC emacs-lisp
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (with-eval-after-load "eldoc"
-  (diminish 'eldoc-mode))
+  (with-eval-after-load "diminish"
+    (diminish 'eldoc-mode)))
 #+END_SRC
 
 *** Autocompile

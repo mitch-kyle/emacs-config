@@ -32,7 +32,7 @@
         (byte-compile-file generated-file)))
 
   (defun mkyle/rebuild-init-file ()
-    "Rebuild init file if it's changed since the last time it was built."
+    "Rebuild init files if they've changed since the last time it was built."
     (interactive)
     (mkyle/--tangle-compile-elisp-file (expand-file-name "readme.org"
                                                          user-emacs-directory)
@@ -309,13 +309,20 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :if window-system
   :config
   (progn
-    (setq powerline-default-separator 'contour
-          spaceline-minor-modes-separator "∙")
+    (require 'spaceline)
+    (require 'spaceline-segments)
 
-    ;; TODO Move to the left
+    (setq-default anzu-cons-mode-line-p           nil
+                  powerline-default-separator     'contour
+                  spaceline-minor-modes-separator " ")
+
+    ;; Projectile doesn't really fit with the other minor modes
+    ;; but the menu might be useful. let's move it to it's own
+    ;; segment
     (spaceline-define-segment mkyle/projectile
       "Display project name with projectile menu"
-      (when (projectile-project-root)
+      (when (and (boundp projectile-project-root)
+                 (projectile-project-root))
         (propertize (projectile-project-name)
           'local-map (let ((map (make-sparse-keymap)))
                        (define-key map [mode-line down-mouse-1]
@@ -323,7 +330,53 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                         map)
           'mouse-face 'mode-line-highlight)))
 
-    (spaceline-emacs-theme 'mkyle/projectile)))
+    (defun mkyle/spaceline-theme (&rest additional-segments)
+      "Spaceline emacs theme with some tweaks"
+      (spaceline-compile
+       `((((((persp-name :fallback workspace-number) window-number)
+            :separator "•")
+           buffer-modified
+           buffer-size)
+          :face highlight-face
+          :priority 100)
+         (anzu :priority 95)
+         auto-compile
+         ((buffer-id remote-host)
+          :priority 98)
+         (major-mode :priority 79)
+         (process :when active)
+         ((flycheck-error flycheck-warning flycheck-info)
+          :when active
+          :priority 89)
+         (minor-modes :when active
+                      :priority 9)
+         (mu4e-alert-segment :when active)
+         (erc-track :when active)
+         (version-control :when active
+                          :priority 78)
+         (mkyle/projectile :priority 20)
+         (org-pomodoro :when active)
+         (org-clock :when active)
+         nyan-cat)
+       `(which-function
+         (python-pyvenv :fallback python-pyenv)
+         (purpose :priority 94)
+         (battery :when active)
+         (selection-info :priority 95)
+         input-method
+         ((point-position line-column)
+          :separator " • "
+          :priority 96)
+         ((buffer-encoding-abbrev)
+          :priority 9)
+         (global :when active)
+         ,@additional-segments
+         (buffer-position :priority 99)
+         (hud :priority 99)))
+      (setq-default mode-line-format
+                    '("%e" (:eval (spaceline-ml-main)))))
+
+    (mkyle/spaceline-theme)))
 
 (when window-system
   (setq-default window-divider-default-right-width 1)
@@ -446,7 +499,8 @@ Inserted by installing org-mode or when a release is made."
 
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (with-eval-after-load "eldoc"
-  (diminish 'eldoc-mode))
+  (with-eval-after-load "diminish"
+    (diminish 'eldoc-mode)))
 
 (use-package auto-compile
   :config
