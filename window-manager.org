@@ -23,7 +23,7 @@ C-u M-x org-babel-load-file RET path/to/window-manager.org
     - [[#move-buffers-between-monitors][Move Buffers Between Monitors]]
   - [[#buffer-names][Buffer Names]]
   - [[#system-tray][System Tray]]
-  - [[#modeline][Modeline]]
+  - [[#mode-line][Mode Line]]
     - [[#date-and-time][Date and Time]]
     - [[#battery][Battery]]
   - [[#ibuffer-group][IBuffer Group]]
@@ -155,7 +155,7 @@ Show the system tray in the bottom right corner.
 (exwm-systemtray-enable)
 #+END_SRC
 
-** Modeline
+** Mode Line
 Add some extra information that would normally be in the window manager panel.
 
 *** Date and Time
@@ -168,12 +168,9 @@ Show the date and time
 *** Battery
 Show the battery level and charging status.
 #+BEGIN_SRC emacs-lisp :tangle yes
-(display-battery-mode t)
+(use-package fancy-battery
+  :config (fancy-battery-mode t))
 #+END_SRC
-
-**** TODO Weird Formatting
-display-battery-mode seems to be having trouble some formatting trouble with
- spaceline for some reason but is still usable.
 
 ** IBuffer Group
 It's nice to have all the xwindows in their own ibuffer group so you aren't

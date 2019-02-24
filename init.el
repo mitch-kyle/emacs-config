@@ -223,8 +223,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     (global-set-key (kbd "C-c <down>")  'windmove-down)))
 
 (use-package projectile
+  :diminish projectile-mode
   :config (progn
-            (setq-default projectile-mode-line-prefix "")
             (global-set-key (kbd "C-c p") projectile-command-map)
             (projectile-mode t)))
 
@@ -286,7 +286,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package flyspell
   :commands flyspell-mode
-  :diminish flyspell-mode
   :config
   (setq-default flyspell-issue-welcome-flag nil
                 flyspell-issue-message-flag nil
@@ -313,13 +312,18 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     (setq powerline-default-separator 'contour
           spaceline-minor-modes-separator "∙")
 
-    (spaceline-define-segment projectile
-      :when projectile-mode
-      :enabled t
-      :priority 2000
-      (projectile-default-mode-line))
+    ;; TODO Move to the left
+    (spaceline-define-segment mkyle/projectile
+      "Display project name with projectile menu"
+      (when (projectile-project-root)
+        (propertize (projectile-project-name)
+          'local-map (let ((map (make-sparse-keymap)))
+                       (define-key map [mode-line down-mouse-1]
+                                   projectile-mode-menu)
+                        map)
+          'mouse-face 'mode-line-highlight)))
 
-    (spaceline-emacs-theme)))
+    (spaceline-emacs-theme 'mkyle/projectile)))
 
 (when window-system
   (setq-default window-divider-default-right-width 1)

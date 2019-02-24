@@ -79,7 +79,8 @@
 (setq display-time-day-and-date t)
 (display-time-mode t)
 
-(display-battery-mode t)
+(use-package fancy-battery
+  :config (fancy-battery-mode t))
 
 (with-eval-after-load "ibuffer-dynamic-groups"
   (ibuffer-dynamic-groups-add (lambda (groups)

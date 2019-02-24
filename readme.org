@@ -120,7 +120,6 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
 - [[#window-manager-exwm][Window Manager EXWM]]
 - [[#footer][Footer]]
 
-
 * Platform
 Things that inform the rest of the configuration. "How things are done" sort of stuff.
 
@@ -526,8 +525,8 @@ Switch windows in the direct of the arrow keys. (s-<arrow>). (s-x <arrow>) in th
 A set of commands for editing files as part of a project
 #+BEGIN_SRC emacs-lisp
 (use-package projectile
+  :diminish projectile-mode
   :config (progn
-            (setq-default projectile-mode-line-prefix "")
             (global-set-key (kbd "C-c p") projectile-command-map)
             (projectile-mode t)))
 #+END_SRC
@@ -663,7 +662,6 @@ A minor mode for spell checking. When enabled use =C-c $= to correct word.
 #+BEGIN_SRC emacs-lisp
 (use-package flyspell
   :commands flyspell-mode
-  :diminish flyspell-mode
   :config
   (setq-default flyspell-issue-welcome-flag nil
                 flyspell-issue-message-flag nil
@@ -695,7 +693,8 @@ looks horrible on a typical terminal
 #+END_SRC
 
 *** Mode Line Eyecandy - Spaceline
-Spaceline is a nice looking mode line package based on powerline from the [[http://spacemacs.org/][spacemacs]] distribution
+Spaceline is a nice looking mode line package based on powerline from the
+[[http://spacemacs.org/][spacemacs]] distribution
 #+BEGIN_SRC emacs-lisp
 (use-package spaceline
   :if window-system
@@ -704,13 +703,18 @@ Spaceline is a nice looking mode line package based on powerline from the [[http
     (setq powerline-default-separator 'contour
           spaceline-minor-modes-separator "∙")
 
-    (spaceline-define-segment projectile
-      :when projectile-mode
-      :enabled t
-      :priority 2000
-      (projectile-default-mode-line))
+    ;; TODO Move to the left
+    (spaceline-define-segment mkyle/projectile
+      "Display project name with projectile menu"
+      (when (projectile-project-root)
+        (propertize (projectile-project-name)
+          'local-map (let ((map (make-sparse-keymap)))
+                       (define-key map [mode-line down-mouse-1]
+                                   projectile-mode-menu)
+                        map)
+          'mouse-face 'mode-line-highlight)))
 
-    (spaceline-emacs-theme)))
+    (spaceline-emacs-theme 'mkyle/projectile)))
 #+END_SRC
 
 *** Window Divider
