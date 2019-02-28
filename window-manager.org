@@ -110,10 +110,30 @@ Use the ido flavour if ido is available.
 *** Navigate Between Monitors
 Since workspace are just frames we can move between them the magic library
 called framemove which hooks into windmove and works pretty seamlessly.
+In theory, in practice we need to do some monkeying to get it working.
 #+BEGIN_SRC emacs-lisp :tangle yes
 (use-package framemove
   :after windmove
-  :config (setq framemove-hook-into-windmove t))
+  :init
+  (progn
+    (require 'seq)
+    ;; Framemove uses some old jazz but does so trivially, let's
+    ;; give it the function it wants
+    (defalias 'remove-if-not 'seq-filter))
+
+  :config
+  (progn
+    (require 'windmove)
+
+    (defun mkyle/windmove-framemove-hook (f dir &optional arg window)
+      "Hook windmove to framemove properly"
+      (condition-case nil
+        (funcall f dir arg window)
+        ('error (fm-next-frame dir))))
+
+    (advice-add 'windmove-do-window-select
+                :around
+                #'mkyle/windmove-framemove-hook)))
 #+END_SRC
 
 Also make sure windmove bindings are avilable in exwm buffers
@@ -183,6 +203,7 @@ It's nice to have all the xwindows in their own ibuffer group so you aren't
                               '((name . exwm-group)
                                 (depth . -10))))
 #+END_SRC
+
 
 * Applications
 ** Launching Applications

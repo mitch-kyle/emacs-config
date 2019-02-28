@@ -69,7 +69,7 @@
 (line-number-mode t)
 (column-number-mode t)
 
-(set-frame-font "xos4 Terminus 12")
+(set-frame-font "xos4 Terminus 12" nil (frame-list))
 
 (when (member "Symbola" (font-family-list))
   (set-fontset-font t 'unicode "Symbola" nil 'prepend))
@@ -287,6 +287,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :commands rainbow-mode
   :diminish rainbow-mode)
 
+(use-package highlight-symbol
+  :hook ((prog-mode) . hightlight-symbol-mode)
+  :config (set-face-attribute 'highlight-symbol-face nil
+                    :background nil
+                    :underline t))
+
 (use-package flyspell
   :commands flyspell-mode
   :config
@@ -395,7 +401,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
           '(95 . 95)
         '(100 . 100))))
 
-  (set-frame-parameter nil 'alpha '(95 . 95)))
+  (set-frame-parameter nil 'alpha '(95 . 95))
+
+  ;; Make new frame transparent because we don't always inherit
+  (add-to-list 'after-make-frame-functions
+               (lambda (&rest _)
+                 (set-frame-parameter nil 'alpha '(95 . 95)))))
 
 (use-package git)
 (when (require 'git nil t)

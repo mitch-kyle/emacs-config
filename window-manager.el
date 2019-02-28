@@ -52,7 +52,26 @@
 
 (use-package framemove
   :after windmove
-  :config (setq framemove-hook-into-windmove t))
+  :init
+  (progn
+    (require 'seq)
+    ;; Framemove uses some old jazz but does so trivially, let's
+    ;; give it the function it wants
+    (defalias 'remove-if-not 'seq-filter))
+
+  :config
+  (progn
+    (require 'windmove)
+
+    (defun mkyle/windmove-framemove-hook (f dir &optional arg window)
+      "Hook windmove to framemove properly"
+      (condition-case nil
+        (funcall f dir arg window)
+        ('error (fm-next-frame dir))))
+
+    (advice-add 'windmove-do-window-select
+                :around
+                #'mkyle/windmove-framemove-hook)))
 
 (exwm-input-set-key (kbd "s-<left>") #'windmove-left)
 (exwm-input-set-key (kbd "s-<right>") #'windmove-right)
