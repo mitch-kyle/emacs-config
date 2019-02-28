@@ -175,20 +175,19 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
      filename-and-process)
     (mark " " (name 16 -1) " " filename))))
 
-(with-eval-after-load "ibuffer"
-  (setq ibuffer-show-empty-filter-groups nil)
-
-  (use-package ibuffer-dynamic-groups
-      :straight (ibuffer-dynamic-groups :type git
-                                        :host github
-                                        :repo "mitch-kyle/ibuffer-dynamic-groups")
-      :config (progn
-                (ibuffer-dynamic-groups-add
-                 (lambda (groups)
-                   (append groups
-                           '(("System" (name . "^\\*.*\\*$")))))
-                 '((name . system-group)))
-                (ibuffer-dynamic-groups t))))
+(use-package ibuffer-dynamic-groups
+  :after ibuffer
+  :straight (ibuffer-dynamic-groups :type git
+                                    :host github
+                                    :repo "mitch-kyle/ibuffer-dynamic-groups")
+  :config (progn
+           (setq ibuffer-show-empty-filter-groups nil)
+           (ibuffer-dynamic-groups-add
+            (lambda (groups)
+              (append groups
+                      '(("System" (name . "^\\*.*\\*$")))))
+            '((name . system-group)))
+           (ibuffer-dynamic-groups t)))
 
 (use-package ido
   :config
@@ -475,6 +474,8 @@ Inserted by installing org-mode or when a release is made."
     (setq-default ediff-window-setup-function 'ediff-setup-windows-plain)))
 
 (use-package erc
+  :defer t
+  :commands (erc)
   :config
   (progn
     (setq erc-query-display 'buffer

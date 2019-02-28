@@ -465,20 +465,19 @@ Setup the buffer list columns to show more of the name
 Organize the list of buffers by group. Dynamic groups allow this list to be generated and for it to be extended
 by other packages (like ibuffer-projectile)
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load "ibuffer"
-  (setq ibuffer-show-empty-filter-groups nil)
-
-  (use-package ibuffer-dynamic-groups
-      :straight (ibuffer-dynamic-groups :type git
-                                        :host github
-                                        :repo "mitch-kyle/ibuffer-dynamic-groups")
-      :config (progn
-                (ibuffer-dynamic-groups-add
-                 (lambda (groups)
-                   (append groups
-                           '(("System" (name . "^\\*.*\\*$")))))
-                 '((name . system-group)))
-                (ibuffer-dynamic-groups t))))
+(use-package ibuffer-dynamic-groups
+  :after ibuffer
+  :straight (ibuffer-dynamic-groups :type git
+                                    :host github
+                                    :repo "mitch-kyle/ibuffer-dynamic-groups")
+  :config (progn
+           (setq ibuffer-show-empty-filter-groups nil)
+           (ibuffer-dynamic-groups-add
+            (lambda (groups)
+              (append groups
+                      '(("System" (name . "^\\*.*\\*$")))))
+            '((name . system-group)))
+           (ibuffer-dynamic-groups t)))
 #+END_SRC
 
 *** List Options When Doing Things - Ido
@@ -922,6 +921,8 @@ Cleanup ediff buffers and restore window configuration when finished.
 Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long buffers, enable logging and other things.
 #+BEGIN_SRC emacs-lisp
 (use-package erc
+  :defer t
+  :commands (erc)
   :config
   (progn
     (setq erc-query-display 'buffer
