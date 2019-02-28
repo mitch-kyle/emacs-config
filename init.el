@@ -44,6 +44,9 @@
                                                          user-emacs-directory))
     (byte-compile-file custom-file)))
 
+(use-package exec-path-from-shell
+  :config (exec-path-from-shell-initialize))
+
 (use-package no-littering)
 
 (with-eval-after-load "no-littering"
@@ -158,10 +161,10 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :diminish beacon-mode
   :config (beacon-mode +1))
 
-(use-package exec-path-from-shell
-  :config (exec-path-from-shell-initialize))
-
 (global-set-key (kbd "C-x C-b") 'ibuffer)
+
+(with-eval-after-load "ibuffer"
+  (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode))
 
 (with-eval-after-load "ibuffer"
   (setq ibuffer-formats
@@ -233,12 +236,13 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :config
   (progn
     (setq ibuffer-projectile-prefix "- ")
-    (ibuffer-dynamic-groups-add
-     (lambda (groups)
-       (append (ibuffer-projectile-generate-filter-groups)
-               groups))
-     '((name . projectile-groups)
-       (depth . -50)))))
+    (with-eval-after-load "ibuffer-dynamic-groups"
+      (ibuffer-dynamic-groups-add
+       (lambda (groups)
+         (append (ibuffer-projectile-generate-filter-groups)
+                 groups))
+       '((name . projectile-groups)
+         (depth . -50))))))
 
 (with-eval-after-load "tramp"
   (setq tramp-default-method "ssh"))
@@ -433,69 +437,62 @@ Inserted by installing org-mode or when a release is made."
 
 (use-package magit
   :defer t
-  :config (global-set-key (kbd "C-x g") 'magit-status))
+  :bind (("C-x g" . magit-status)))
 
 (use-package git-modes
   :defer t)
 
-(with-eval-after-load "ediff"
-  ;; TODO this fails when ediff complains about a buffer already open for a file being merged
-  (defun mkyle/ediff-janitor ()
-    "Delete buffers and restore window on ediff exit."
-    (let* ((ctl-buf ediff-control-buffer)
-           (ctl-win (ediff-get-visible-buffer-window ctl-buf))
-           (ctl-frm ediff-control-frame)
-           (main-frame (cond ((window-live-p ediff-window-A)
-                              (window-frame ediff-window-A))
-                             ((window-live-p ediff-window-B)
-                              (window-frame ediff-window-B)))))
-      (ediff-kill-buffer-carefully ediff-diff-buffer)
-      (ediff-kill-buffer-carefully ediff-custom-diff-buffer)
-      (ediff-kill-buffer-carefully ediff-fine-diff-buffer)
-      (ediff-kill-buffer-carefully ediff-tmp-buffer)
-      (ediff-kill-buffer-carefully ediff-error-buffer)
-      (ediff-kill-buffer-carefully ediff-msg-buffer)
-      (ediff-kill-buffer-carefully ediff-debug-buffer)
-      (when (boundp 'ediff-patch-diagnostics)
-        (ediff-kill-buffer-carefully ediff-patch-diagnostics))
-      (cond ((and (ediff-window-display-p)
-                  (frame-live-p ctl-frm))
-             (delete-frame ctl-frm))
-            ((window-live-p ctl-win)
-             (delete-window ctl-win)))
-      (unless (ediff-multiframe-setup-p)
-        (ediff-kill-bottom-toolbar))
-      (ediff-kill-buffer-carefully ctl-buf)
-      (when (frame-live-p main-frame)
-        (select-frame main-frame)))
-    (ediff-janitor nil nil))
+(use-package ediff
+  :defer t
+  :config
+  (progn
+    (defun mkyle/ediff-write-merge-buffer ()
+      (let ((file ediff-merge-store-file))
+        (set-buffer ediff-buffer-C)
+        (write-region (point-min) (point-max) file)
+        (message "Merge buffer saved in: %s" file)
+        (set-buffer-modified-p nil)
+        (sit-for 1)))
+    (add-hook 'ediff-quit-merge-hook 'mkyle/ediff-write-merge-buffer)
 
-  (add-hook 'ediff-cleanup-hook 'mkyle/ediff-janitor))
+    (defvar mkyle/ediff-last-windows nil)
 
-;; Technically a window management suite but it'll do to return the
-;; window to normal after an ediff session
-(with-eval-after-load "ediff"
-  (use-package winner
-    :hook ((ediff-cleanup) . winner-undo)
-    :config (winner-mode +1)))
+    (defun mkyle/store-pre-ediff-winconfig ()
+      (setq mkyle/ediff-last-windows (current-window-configuration)))
+    (add-hook 'ediff-before-setup-hook 'mkyle/store-pre-ediff-winconfig)
 
-(with-eval-after-load "erc"
-  (setq erc-query-display 'buffer
-        erc-interpret-mirc-color t
-        erc-server-coding-system '(utf-8 . utf-8)
-        erc-save-buffer-on-part t
-        erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
-                                  "324" "329" "332" "333" "353" "477"))
+    (defun mkyle/restore-pre-ediff-winconfig ()
+      (set-window-configuration mkyle/ediff-last-windows))
+    (add-hook 'ediff-quit-hook 'mkyle/restore-pre-ediff-winconfig)
 
-  (erc-truncate-mode +1)
-  (erc-track-mode t)
+    (defun mkyle/kill-ediff-buffers ()
+      (kill-buffer ediff-buffer-A)
+      (kill-buffer ediff-buffer-B)
+      (kill-buffer ediff-buffer-C))
+    (add-hook 'ediff-quit-hook 'mkyle/kill-ediff-buffers)
 
-  (when (require 'erc-log nil t)
-    (unless (file-exists-p erc-log-channels-directory)
-      (mkdir erc-log-channels-directory t)))
+    ;; Don't start a new frame
+    (setq-default ediff-window-setup-function 'ediff-setup-windows-plain)))
 
-  (when (require 'erc-spelling nil t)
-    (erc-spelling-mode 1)))
+(use-package erc
+  :config
+  (progn
+    (setq erc-query-display 'buffer
+          erc-interpret-mirc-color t
+          erc-server-coding-system '(utf-8 . utf-8)
+          erc-save-buffer-on-part t
+          erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
+                                    "324" "329" "332" "333" "353" "477"))
+
+    (erc-truncate-mode +1)
+    (erc-track-mode t)
+
+    (when (require 'erc-log nil t)
+      (unless (file-exists-p erc-log-channels-directory)
+        (mkdir erc-log-channels-directory t)))
+
+    (when (require 'erc-spelling nil t)
+      (erc-spelling-mode 1))))
 
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (with-eval-after-load "eldoc"
@@ -535,12 +532,14 @@ Inserted by installing org-mode or when a release is made."
 
 (use-package cider
   :defer t
-    :config (progn
+  :config (progn
             (setq nrepl-log-messages                   t
                   cider-inject-dependencies-at-jack-in t)
             (add-hook 'cider-mode-hook      'eldoc-mode)
             (add-hook 'cider-repl-mode-hook 'subword-mode)
             (add-hook 'cider-repl-mode-hook 'rainbow-delimiters-mode)
+
+            (define-key cider-mode-map (kbd "C-c f") 'cider-find-var)
 
             (with-eval-after-load "ibuffer-dynamic-groups"
               (ibuffer-dynamic-groups-add
@@ -607,6 +606,7 @@ Inserted by installing org-mode or when a release is made."
 (use-package exwm
   ;; TODO find test for emacs on root window to put here
   :if window-system
+  :after no-littering
   :commands exwm-init
   :defer t
   :config
