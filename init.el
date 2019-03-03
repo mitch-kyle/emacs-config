@@ -506,6 +506,9 @@ Inserted by installing org-mode or when a release is made."
     (when (require 'erc-spelling nil t)
       (erc-spelling-mode 1))))
 
+(when (executable-find "makepkg")
+  (use-package aurel :defer t))
+
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (with-eval-after-load "eldoc"
   (with-eval-after-load "diminish"

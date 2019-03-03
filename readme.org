@@ -102,6 +102,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#git-file-modes][Git file modes]]
     - [[#mergetool][Mergetool]]
   - [[#irc][IRC]]
+  - [[#arch-user-repositories][Arch User Repositories]]
   - [[#emacs-lisp][Emacs Lisp]]
     - [[#documentation][Documentation]]
     - [[#autocompile][Autocompile]]
@@ -957,6 +958,13 @@ Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long bu
 
     (when (require 'erc-spelling nil t)
       (erc-spelling-mode 1))))
+#+END_SRC
+
+** Arch User Repositories
+Search and fetch arch recipes from the AUR.
+#+BEGIN_SRC emacs-lisp
+(when (executable-find "makepkg")
+  (use-package aurel :defer t))
 #+END_SRC
 
 ** Emacs Lisp
