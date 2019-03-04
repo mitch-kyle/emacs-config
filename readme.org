@@ -70,6 +70,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#list-options-when-doing-things---ido][List Options When Doing Things - Ido]]
     - [[#direct-based-window-navigation---windmove][Direct Based Window Navigation - Windmove]]
   - [[#editing][Editing]]
+    - [[#disable-lock-files][Disable Lock Files]]
     - [[#project-management---projectile][Project Management - Projectile]]
       - [[#projectile-ibuffer-groups][Projectile IBuffer Groups]]
     - [[#edit-remote-files---tramp][Edit Remote Files - Tramp]]
@@ -101,6 +102,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#magit][Magit]]
     - [[#git-file-modes][Git file modes]]
     - [[#mergetool][Mergetool]]
+  - [[#restclient][Restclient]]
   - [[#irc][IRC]]
   - [[#arch-user-repositories][Arch User Repositories]]
   - [[#emacs-lisp][Emacs Lisp]]
@@ -528,6 +530,13 @@ Switch windows in the direct of the arrow keys. (s-<arrow>). (s-x <arrow>) in th
 #+END_SRC
 
 ** Editing
+*** Disable Lock Files
+emacs creates these annoy =.#filename= files in the directory of the file being edited. they're mostly
+just a pain.
+#+BEGIN_SRC emacs-lisp
+(setq-default create-lockfiles nil)
+#+END_SRC
+
 *** Project Management - Projectile
 A set of commands for editing files as part of a project
 #+BEGIN_SRC emacs-lisp
@@ -669,7 +678,7 @@ e.g red DarkGreen, #2449FC
 Underline other occurrences of a symbol under the cursor
 #+BEGIN_SRC emacs-lisp
 (use-package highlight-symbol
-  :hook ((prog-mode) . hightlight-symbol-mode)
+  :hook ((prog-mode) . highlight-symbol-mode)
   :config (set-face-attribute 'highlight-symbol-face nil
                     :background nil
                     :underline t))
@@ -934,6 +943,15 @@ Cleanup ediff buffers and restore window configuration when finished.
     (setq-default ediff-window-setup-function 'ediff-setup-windows-plain)))
 #+END_SRC
 
+** Restclient
+make http requests with =C-c C-v=
+
+See [[https://github.com/pashky/restclient.el][restclient github]] for user guide
+#+BEGIN_SRC emacs-lisp
+(use-package restclient
+  :mode ("\\.rest\\'" . restclient-mode))
+#+END_SRC
+***** TODO Add documentation
 ** IRC
 Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long buffers, enable logging and other things.
 #+BEGIN_SRC emacs-lisp

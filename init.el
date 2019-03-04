@@ -224,6 +224,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     (global-set-key (kbd "C-c <up>")    'windmove-up)
     (global-set-key (kbd "C-c <down>")  'windmove-down)))
 
+(setq-default create-lockfiles nil)
+
 (use-package projectile
   :diminish projectile-mode
   :config (progn
@@ -288,7 +290,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   :diminish rainbow-mode)
 
 (use-package highlight-symbol
-  :hook ((prog-mode) . hightlight-symbol-mode)
+  :hook ((prog-mode) . highlight-symbol-mode)
   :config (set-face-attribute 'highlight-symbol-face nil
                     :background nil
                     :underline t))
@@ -483,6 +485,9 @@ Inserted by installing org-mode or when a release is made."
 
     ;; Don't start a new frame
     (setq-default ediff-window-setup-function 'ediff-setup-windows-plain)))
+
+(use-package restclient
+  :mode ("\\.rest\\'" . restclient-mode))
 
 (use-package erc
   :defer t
