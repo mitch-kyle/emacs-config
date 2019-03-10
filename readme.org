@@ -5,12 +5,12 @@
 * What's All This Then?
   This is a configuration file for Emacs.
 
-Inspired by [[http://aaronbedra.com/emacs.d/][Aaron Bedra's config]] with many elements taken from [[https://github.com/bbatsov/prelude][prelude]].
+Inspired by [[http://aaronbedra.com/emacs.d/][Aaron Bedra's config]] with elements taken from [[https://github.com/bbatsov/prelude][prelude]].
 
-This is a [[https://en.wikipedia.org/wiki/Literate_programming][literate program]] which is intended to sit at =~/.emacs.d/readme.org= and
-compile to =~/.emacs.d/init.el=. The file can be recompiled by running =mkyle/rebuild-init-file=.
+This is a [[https://en.wikipedia.org/wiki/Literate_programming][literate program]] which sits at =~/.emacs.d/readme.org= and
+compiles to =~/.emacs.d/init.el{,c}=. Recompile by running =mkyle/rebuild-init-file=.
 
-This file is named =readme.org= so it will show up on the GitHub repo landing page and the idea of
+I named this file =readme.org= so it will show up on the GitHub repo landing page and the idea of
 having a literate program called "readme" amuses me slightly.
 
 The language in this document is informal written as me the writer to you the reader (who is
@@ -123,9 +123,12 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
   - [[#terraform][Terraform]]
 - [[#window-manager-exwm][Window Manager EXWM]]
 - [[#footer][Footer]]
+- [[#tasks][Tasks]]
+  - [[#recompile-on-save][Recompile on save]]
+  - [[#emojis][Emojis]]
 
 * Platform
-Things that inform the rest of the configuration. "How things are done" sort of stuff.
+Things that inform the rest of the configuration.
 
 ** File Header
 Things we want to happen immediately before loading package management and use-package
@@ -133,12 +136,12 @@ Add an emacs lisp header to the generated file with an explanation that it is a 
 #+BEGIN_SRC emacs-lisp
 ;;; init.el --- emacs initialization -*- lexical-binding: t; -*-
 ;;; Commentary:
-;; This file was generated. do not edit. changes may be overwritten
+;; Generated file. do not edit. changes may be overwritten
 ;;; Code:
 #+END_SRC
 
 ** Early Init
-Things we want to do before package management and org mode are loaded
+Things we want to do before configuring package management
 
 *** Garbage Collection
 Garbage collect every 100MB of allocated data rather than the low default
@@ -148,9 +151,8 @@ Garbage collect every 100MB of allocated data rather than the low default
 
 *** Short Answers
 Use 'y' or 'n' rather than 'yes' or 'no'. This should improve productivity when answering binary questions by up
-to 60% according to homer simpson.
+to 60% according to Homer Simpson.
 
-Seems like this wasn't being applied for some thing so let's put it in early init to see if that fixes it.
 #+BEGIN_SRC emacs-lisp
 (defalias 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
@@ -173,8 +175,8 @@ A functional package manager for emacs. See [[https://github.com/raxod502/straig
 #+END_SRC
 
 ** Package Configuration - use-package
-[[https://github.com/jwiegley/use-package][use-package]] is a package configuration tool with many features. One nice one is that it contains failures
-and does't prevent the rest of your configuration from loading. Set it to use straight.el by default.
+[[https://github.com/jwiegley/use-package][use-package]] is a feature-rich package configuration tool. In the event of error during package configuration,
+it doesn't prevent the rest of your configuration from loading. Set it to use straight.el by default.
 #+BEGIN_SRC emacs-lisp
 (setq straight-use-package-by-default t)
 (straight-use-package 'use-package)
@@ -205,8 +207,6 @@ A function to rebuild this project if it's changed since the last time it was bu
     (byte-compile-file custom-file)))
 #+END_SRC
 
-***** TODO Recompile on save
-
 * Look And Feel
 ** Executable Path
 Set the path to the enviroment variable PATH always
@@ -233,7 +233,7 @@ Use a separate file for custom modifications so they are not overwritten in init
     (load base-custom-file t)))
 #+END_SRC
 
-Compile custom file when it changes. it's mostly quoted forms so there might not be much value in this
+Compile custom file when it changes.
 #+BEGIN_SRC emacs-lisp
 (defadvice custom-save-all (after mkyle/recompile-custom-file-on-save () activate)
   "Recompile custom files after saving to it"
@@ -242,7 +242,7 @@ Compile custom file when it changes. it's mostly quoted forms so there might not
 
 ** Mode Line
 The modeline displays information about the buffer like buffer name and what modes are currently active
-between the window and the minibuffer
+between the window and the minibuffer.
 
 *** Hide Minor Modes
 Mode line is for showing all the active modes. Some of these are not useful so let's hide them.
@@ -302,7 +302,7 @@ warn when opening files bigger than 100MB
 #+END_SRC
 
 *** Maximize Screen Space
-Remove the various bars taking up valuable working space
+Remove the different bars taking up valuable working space
 #+BEGIN_SRC emacs-lisp
 (menu-bar-mode -1)
 (tool-bar-mode -1)
@@ -333,7 +333,7 @@ Just call:
 emacsclient filename:linenumber
 #+END_SRC
 
-and file 'filename' will be opened and cursor set on line 'linenumber'
+to open 'filename' and set the cursor on line 'linenumber'.
 From: [[https://github.com/bbatsov/prelude][prelude]]
 
 #+BEGIN_SRC emacs-lisp
@@ -345,7 +345,7 @@ Just call:
 
   emacsclient filename:linenumber
 
-and file 'filename' will be opened and cursor set on line 'linenumber'"
+to open 'filename' and set the cursor on line 'linenumber'."
   (ad-set-arg 0
               (mapcar (lambda (fn)
                         (let ((name (car fn)))
@@ -388,7 +388,7 @@ Rename buffers with the same file name to something useful
 #+END_SRC
 
 *** Reload When Files Change
-Revert buffers automatically when underlying files are changed externally
+When underlying files change, revert buffers automatically.
 #+BEGIN_SRC emacs-lisp
 (global-auto-revert-mode t)
 #+END_SRC
@@ -396,6 +396,9 @@ Revert buffers automatically when underlying files are changed externally
 *** Save Command History
 Remember most recently run commands and text searches
 #+BEGIN_SRC emacs-lisp
+(use-package savehist
+  :config (savehist-mode 1))
+
 (defvar personal-keybindings (make-sparse-keymap))
 (use-package smex
   :after ido
@@ -441,7 +444,7 @@ Show the cursor when moving after big movements in the window
 
 ** Navigation
 *** List Buffers - IBuffer
-List buffers with C-x C-b. The default emacs buffer list isn't very helpful; IBuffer is a good alternative.
+List buffers with C-x C-b. The default emacs buffer list leaves much to be desired; IBuffer is a good alternative.
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 #+END_SRC
@@ -679,9 +682,10 @@ Underline other occurrences of a symbol under the cursor
 #+BEGIN_SRC emacs-lisp
 (use-package highlight-symbol
   :hook ((prog-mode) . highlight-symbol-mode)
+  :diminish highlight-symbol-mode
   :config (set-face-attribute 'highlight-symbol-face nil
-                    :background nil
-                    :underline t))
+                              :background nil
+                              :underline t))
 #+END_SRC
 
 *** Spell Checking - flyspell
@@ -711,7 +715,7 @@ Auto fill common code blocks
 
 ** X Windows
 *** Colour Scheme
-Bright colours on a dull background. very pleasing on the eyes. Only load when in a window-system because it
+Bright colours on a dull background; pleasing on the eyes. Only load when in a window-system because it
 looks horrible on a typical terminal
 #+BEGIN_SRC emacs-lisp
 (use-package monokai-theme
@@ -826,11 +830,9 @@ I like the "glass editing window" effect. This sets it that way by default and g
                  (set-frame-parameter nil 'alpha '(95 . 95)))))
 #+END_SRC
 
-***** TODO Emojis
-
 * Major Modes
 ** Org Mode
- Org mode is used to build this document.
+Org mode is used to build this document.
 
 *** straight.el Workaround
 Because straight.el can't properly compile org yet, we need to define the org-version function
@@ -953,7 +955,8 @@ See [[https://github.com/pashky/restclient.el][restclient github]] for user guid
 #+END_SRC
 ***** TODO Add documentation
 ** IRC
-Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long buffers, enable logging and other things.
+Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long buffers,
+enable logging and other things.
 #+BEGIN_SRC emacs-lisp
 (use-package erc
   :defer t
@@ -991,10 +994,9 @@ Extension language for emacs. Most useful packages for elisp are included with v
 *** Documentation
 Show documentation in the minibuffer for symbol under cursor
 #+BEGIN_SRC emacs-lisp
-(add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-(with-eval-after-load "eldoc"
-  (with-eval-after-load "diminish"
-    (diminish 'eldoc-mode)))
+(use-package eldoc
+  :diminish eldoc-mode
+  :hook ((emacs-lisp-mode) . eldoc-mode))
 #+END_SRC
 
 *** Autocompile
@@ -1161,7 +1163,7 @@ Interpret the *many* zsh configuration scripts as zsh and recognize the =.zsh= f
 
 ** Terraform
 Because why use something everyone's familiar with when you can create your own domain specific language?
-I'm just sour because I think scheme should be used to configure everything non-trivial. :-)
+I'm just sour because I think one should use scheme should to configure everything non-trivial. :-)
 #+BEGIN_SRC emacs-lisp
 (use-package terraform-mode
   :mode ("\\.tf\\'" "\\.tvars\\'"))
@@ -1184,8 +1186,13 @@ See: [[./window-manager.org][window-manager.org]]
 #+END_SRC
 
 * Footer
-Add a marker so we know where the file is intended to end
+Add a marker so we know where the file ends.
 #+BEGIN_SRC emacs-lisp
 ;; init.el ends here
 #+END_SRC
+
+* Tasks
+** TODO Recompile on save
+** TODO Emojis
+
 # readme.org ends here

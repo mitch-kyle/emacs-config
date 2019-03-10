@@ -127,6 +127,9 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (global-auto-revert-mode t)
 
+(use-package savehist
+  :config (savehist-mode 1))
+
 (defvar personal-keybindings (make-sparse-keymap))
 (use-package smex
   :after ido
@@ -291,9 +294,10 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package highlight-symbol
   :hook ((prog-mode) . highlight-symbol-mode)
+  :diminish highlight-symbol-mode
   :config (set-face-attribute 'highlight-symbol-face nil
-                    :background nil
-                    :underline t))
+                              :background nil
+                              :underline t))
 
 (use-package flyspell
   :commands flyspell-mode
