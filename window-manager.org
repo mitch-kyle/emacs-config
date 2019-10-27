@@ -74,13 +74,12 @@ Use the ido flavour if ido is available.
 (require 'exwm-randr)
 (require 'seq)
 (defun wm/xrandr-update-outputs ()
-  (let* ((monitors   (car
-                      (read-from-string
-                        ;; TODO write in el
-                       (shell-command-to-string
-                        "xrandr | awk 'BEGIN {print \"(\"}
-                                       / connected/ {print \"\\\"\" $1 \"\\\"\"}
-                                       END {print \")\"}'"))))
+  (let* ((monitors   (let ((reg "^\\([^ ]*?\\) connected")
+                           (str (shell-command-to-string "xrandr"))
+                           (pos 0) (res))
+                       (while (setq pos (string-match reg str (1+ pos)))
+                         (push (match-string 1 str) res))
+                       (nreverse res)))
          (n-monitors (length monitors)))
     (setq exwm-randr-workspace-monitor-plist
           (apply 'append
