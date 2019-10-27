@@ -69,8 +69,8 @@ Use the ido flavour if ido is available.
 #+END_SRC
 
 ** Multiple Monitors
- Automatically create new workspaces when monitors are added or removed.
- #+BEGIN_SRC emacs-lisp :tangle yes
+Automatically create new workspaces when monitors are added or removed.
+#+BEGIN_SRC emacs-lisp :tangle yes
 (require 'exwm-randr)
 (require 'seq)
 (defun wm/xrandr-update-outputs ()
@@ -102,9 +102,7 @@ Use the ido flavour if ido is available.
 
 (add-hook 'exwm-init-hook #'wm/xrandr-init)
 (add-hook 'exwm-exit-hook #'wm/xrandr-exit)
- #+END_SRC
-
-**** TODO Remove use of awk, use elisp
+#+END_SRC
 
 *** Navigate Between Monitors
 Since workspace are just frames we can move between them the magic library
