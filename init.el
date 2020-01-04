@@ -1,6 +1,6 @@
 ;;; init.el --- emacs initialization -*- lexical-binding: t; -*-
 ;;; Commentary:
-;; This file was generated. do not edit. changes may be overwritten
+;; Generated file. do not edit. changes may be overwritten
 ;;; Code:
 
 (setq-default gc-cons-threshold 104857600)
@@ -95,7 +95,7 @@ Just call:
 
   emacsclient filename:linenumber
 
-and file 'filename' will be opened and cursor set on line 'linenumber'"
+to open 'filename' and set the cursor on line 'linenumber'."
   (ad-set-arg 0
               (mapcar (lambda (fn)
                         (let ((name (car fn)))
@@ -215,12 +215,15 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                  ;; disable ido faces to see flx highlights
                  (setq ido-use-faces nil)))
 
-(if window-system
-    (progn
-      (global-set-key [s-left]  'windmove-left)
-      (global-set-key [s-right] 'windmove-right)
-      (global-set-key [s-up]    'windmove-up)
-      (global-set-key [s-down]  'windmove-down))
+(windmove-default-keybindings)
+
+(progn
+  (global-set-key [s-left]  'windmove-left)
+  (global-set-key [s-right] 'windmove-right)
+  (global-set-key [s-up]    'windmove-up)
+  (global-set-key [s-down]  'windmove-down))
+
+(unless window-system
   (progn
     (global-set-key (kbd "C-c <left>")  'windmove-left)
     (global-set-key (kbd "C-c <right>") 'windmove-right)
@@ -228,6 +231,10 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
     (global-set-key (kbd "C-c <down>")  'windmove-down)))
 
 (setq-default create-lockfiles nil)
+
+(with-eval-after-load "no-littering"
+  (setq-default auto-save-file-name-transforms
+                `((".*" ,no-littering-var-directory t))))
 
 (use-package projectile
   :diminish projectile-mode
@@ -518,10 +525,9 @@ Inserted by installing org-mode or when a release is made."
 (when (executable-find "makepkg")
   (use-package aurel :defer t))
 
-(add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-(with-eval-after-load "eldoc"
-  (with-eval-after-load "diminish"
-    (diminish 'eldoc-mode)))
+(use-package eldoc
+  :diminish eldoc-mode
+  :hook ((emacs-lisp-mode) . eldoc-mode))
 
 (use-package auto-compile
   :config

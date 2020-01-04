@@ -70,7 +70,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#list-options-when-doing-things---ido][List Options When Doing Things - Ido]]
     - [[#direct-based-window-navigation---windmove][Direct Based Window Navigation - Windmove]]
   - [[#editing][Editing]]
-    - [[#disable-lock-files][Disable Lock Files]]
+    - [[#keep-directories-clean][Keep Directories Clean]]
     - [[#project-management---projectile][Project Management - Projectile]]
       - [[#projectile-ibuffer-groups][Projectile IBuffer Groups]]
     - [[#edit-remote-files---tramp][Edit Remote Files - Tramp]]
@@ -517,14 +517,17 @@ See [[http://ergoemacs.org/emacs/emacs_ido_mode.html][ergomacs ido tutorial]]
 #+END_SRC
 
 *** Direct Based Window Navigation - Windmove
-Switch windows in the direct of the arrow keys. (s-<arrow>). (s-x <arrow>) in the terminal because modifiers on arrow keys aren't always supported
+Switch windows in the direct of the arrow keys. (s-<arrow>). (C-c <arrow>) in the terminal because modifiers on arrow keys aren't always supported
 #+BEGIN_SRC emacs-lisp
-(if window-system
-    (progn
-      (global-set-key [s-left]  'windmove-left)
-      (global-set-key [s-right] 'windmove-right)
-      (global-set-key [s-up]    'windmove-up)
-      (global-set-key [s-down]  'windmove-down))
+(windmove-default-keybindings)
+
+(progn
+  (global-set-key [s-left]  'windmove-left)
+  (global-set-key [s-right] 'windmove-right)
+  (global-set-key [s-up]    'windmove-up)
+  (global-set-key [s-down]  'windmove-down))
+
+(unless window-system
   (progn
     (global-set-key (kbd "C-c <left>")  'windmove-left)
     (global-set-key (kbd "C-c <right>") 'windmove-right)
@@ -533,11 +536,21 @@ Switch windows in the direct of the arrow keys. (s-<arrow>). (s-x <arrow>) in th
 #+END_SRC
 
 ** Editing
-*** Disable Lock Files
-emacs creates these annoy =.#filename= files in the directory of the file being edited. they're mostly
-just a pain.
+*** Keep Directories Clean
+emacs creates these annoy =.#filename= lock files in the directory of
+the file being edited. When there's only one user on the system
+they're mostly just a pain.
 #+BEGIN_SRC emacs-lisp
 (setq-default create-lockfiles nil)
+#+END_SRC
+
+Auto-save creates =#filename#= files in the directory of the file being edited;
+this interferes with just about everything so let's move them to the variable
+directory.
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load "no-littering"
+  (setq-default auto-save-file-name-transforms
+                `((".*" ,no-littering-var-directory t))))
 #+END_SRC
 
 *** Project Management - Projectile

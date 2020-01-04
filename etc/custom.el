@@ -7,7 +7,12 @@
  '(company-tooltip-flip-when-above t)
  '(custom-safe-themes
    (quote
-    ("2925ed246fb757da0e8784ecf03b9523bccd8b7996464e587b081037e0e98001" default))))
+    ("2925ed246fb757da0e8784ecf03b9523bccd8b7996464e587b081037e0e98001" default)))
+ '(safe-local-variable-values
+   (quote
+    ((eval modify-syntax-entry 43 "'")
+     (eval modify-syntax-entry 36 "'")
+     (eval modify-syntax-entry 126 "'")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

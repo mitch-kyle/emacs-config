@@ -52,6 +52,7 @@
 
 (use-package framemove
   :after windmove
+  :commands (mkyle/windmove-framemove-hook fm-next-frame)
   :init
   (progn
     (require 'seq)
@@ -99,6 +100,7 @@
 (display-time-mode t)
 
 (use-package fancy-battery
+  :commands fancy-battery-mode
   :config (fancy-battery-mode t))
 
 (with-eval-after-load "ibuffer-dynamic-groups"

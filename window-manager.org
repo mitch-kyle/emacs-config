@@ -114,6 +114,7 @@ In theory, in practice we need to do some monkeying to get it working.
 #+BEGIN_SRC emacs-lisp :tangle yes
 (use-package framemove
   :after windmove
+  :commands (mkyle/windmove-framemove-hook fm-next-frame)
   :init
   (progn
     (require 'seq)
@@ -189,6 +190,7 @@ Show the date and time
 Show the battery level and charging status.
 #+BEGIN_SRC emacs-lisp :tangle yes
 (use-package fancy-battery
+  :commands fancy-battery-mode
   :config (fancy-battery-mode t))
 #+END_SRC
 
