@@ -3,10 +3,6 @@
 ;; Generated file. do not edit. changes may be overwritten
 ;;; Code:
 
-(setq-default gc-cons-threshold 104857600)
-
-(defalias 'yes-or-no-p 'y-or-n-p)
-
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -24,25 +20,21 @@
 (straight-use-package 'use-package)
 
 (with-eval-after-load "org"
-  (defun mkyle/--tangle-compile-elisp-file (source-file generated-file)
-    (when (org-file-newer-than-p source-file
-                                   (file-attribute-modification-time
-                                    (file-attributes generated-file)))
-        (org-babel-tangle-file source-file generated-file "emacs-lisp")
-        (byte-compile-file generated-file)))
-
   (defun mkyle/rebuild-init-file ()
     "Rebuild init files if they've changed since the last time it was built."
     (interactive)
-    (mkyle/--tangle-compile-elisp-file (expand-file-name "readme.org"
-                                                         user-emacs-directory)
-                                       (expand-file-name "init.el"
-                                                         user-emacs-directory))
-    (mkyle/--tangle-compile-elisp-file (expand-file-name "window-manager.org"
-                                                         user-emacs-directory)
-                                       (expand-file-name "window-manager.el"
-                                                         user-emacs-directory))
-    (byte-compile-file custom-file)))
+    (org-babel-tangle-file (expand-file-name "readme.org"
+                                             user-emacs-directory)
+                           "emacs-lisp")
+    (byte-compile-file (expand-file-name "early-init.el"
+                                         user-emacs-directory))
+    (byte-compile-file (expand-file-name "init.el"
+                                          user-emacs-directory))
+    (org-babel-tangle-file (expand-file-name "window-manager.org"
+                                             user-emacs-directory)
+                           "emacs-lisp")
+    (byte-compile-file (expand-file-name "window-manager.el"
+                                         user-emacs-directory))))
 
 (use-package exec-path-from-shell
   :config (exec-path-from-shell-initialize))
@@ -78,10 +70,6 @@
       initial-scratch-message nil)
 
 (setq-default large-file-warning-threshold 104857600)
-
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
 
 (use-package which-key
   :diminish which-key-mode
@@ -328,7 +316,6 @@ to open 'filename' and set the cursor on line 'linenumber'."
   :config (load-theme 'monokai t))
 
 (use-package spaceline
-  :if window-system
   :config
   (progn
     (require 'spaceline)
@@ -640,7 +627,9 @@ Inserted by installing org-mode or when a release is made."
   :commands exwm-init
   :defer t
   :config
-  (load (expand-file-name "window-manager"
-                          user-emacs-directory)))
+  (require 'window-manager
+           (expand-file-name "window-manager.el"
+                             user-emacs-directory)
+            t))
 
 ;; init.el ends here

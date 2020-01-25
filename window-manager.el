@@ -216,4 +216,5 @@ may or may not spawn an x window"
 (exwm-input-set-key (kbd "<XF86Sleep>")             (lambda () (interactive)))
 (exwm-input-set-key (kbd "<XF86WLAN>")              (lambda () (interactive)))
 
+(provide 'window-manager)
 ;;; window-manager.el ends here

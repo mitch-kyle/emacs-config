@@ -41,7 +41,7 @@ C-u M-x org-babel-load-file RET path/to/window-manager.org
 
 * Header
 Enable lexical binding and print generated file disclaimer
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 ;;; window-manager.el --- exwm configuration -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;; This file was generated. do not edit. changes may be overwritten
@@ -52,7 +52,7 @@ Enable lexical binding and print generated file disclaimer
 ** Initial Configuration
 This loads up all the builtin configuration in the library.
 Use the ido flavour if ido is available.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (require 'exwm)
 (require 'exwm-config)
 (require 'server)
@@ -69,8 +69,8 @@ Use the ido flavour if ido is available.
 #+END_SRC
 
 ** Multiple Monitors
-Automatically create new workspaces when monitors are added or removed.
-#+BEGIN_SRC emacs-lisp :tangle yes
+ Automatically create new workspaces when monitors are added or removed.
+ #+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (require 'exwm-randr)
 (require 'seq)
 (defun wm/xrandr-update-outputs ()
@@ -108,7 +108,7 @@ Automatically create new workspaces when monitors are added or removed.
 Since workspace are just frames we can move between them the magic library
 called framemove which hooks into windmove and works pretty seamlessly.
 In theory, in practice we need to do some monkeying to get it working.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (use-package framemove
   :after windmove
   :commands (mkyle/windmove-framemove-hook fm-next-frame)
@@ -135,7 +135,7 @@ In theory, in practice we need to do some monkeying to get it working.
 #+END_SRC
 
 Also make sure windmove bindings are avilable in exwm buffers
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (exwm-input-set-key (kbd "s-<left>") #'windmove-left)
 (exwm-input-set-key (kbd "s-<right>") #'windmove-right)
 (exwm-input-set-key (kbd "s-<up>") #'windmove-up)
@@ -145,7 +145,7 @@ Also make sure windmove bindings are avilable in exwm buffers
 *** Move Buffers Between Monitors
 We're not gonna use workspaces for anything besides multimonitor support
 so disable workspace isolation.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (setq exwm-workspace-show-all-buffers t
       exwm-layout-show-all-buffers    t)
 #+END_SRC
@@ -153,7 +153,7 @@ so disable workspace isolation.
 ** Buffer Names
 Having a bunch of buffers named EXWM isn't helpful so let's make it the xwindow
 title. Don't ask me why this isn't the default behaviour.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (defun wm/rename-buffer ()
   (interactive)
   (exwm-workspace-rename-buffer
@@ -168,7 +168,7 @@ title. Don't ask me why this isn't the default behaviour.
 
 ** System Tray
 Show the system tray in the bottom right corner.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (require 'exwm-systemtray)
 (exwm-systemtray-enable)
 #+END_SRC
@@ -178,14 +178,14 @@ Add some extra information that would normally be in the window manager panel.
 
 *** Date and Time
 Show the date and time
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (setq display-time-day-and-date t)
 (display-time-mode t)
 #+END_SRC
 
 *** Battery
 Show the battery level and charging status.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (use-package fancy-battery
   :commands fancy-battery-mode
   :config (fancy-battery-mode t))
@@ -194,7 +194,7 @@ Show the battery level and charging status.
 ** IBuffer Group
 It's nice to have all the xwindows in their own ibuffer group so you aren't
  hunting for them.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (with-eval-after-load "ibuffer-dynamic-groups"
   (ibuffer-dynamic-groups-add (lambda (groups)
                                 (append '(("X Windows" (mode . exwm-mode)))
@@ -207,7 +207,7 @@ It's nice to have all the xwindows in their own ibuffer group so you aren't
 * Applications
 ** Launching Applications
 Gotta be able to launch windows without hanging emacs.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (defmacro wm/define-launcher (fun-name command-and-args)
   "Define an interactive function that invokes the shell command given"
   `(defun ,fun-name ()
@@ -223,7 +223,7 @@ may or may not spawn an x window"
 
 ** Terminal Emulator
 Because eshell doesn't really do it for me.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (defvar wm/terminal-emulator "terminator")
 (defvar wm/preferred-shell "/usr/bin/zsh")
 #+END_SRC
@@ -237,7 +237,7 @@ It's dirty but it works. We want to be able to run a command in a new-window
 in our tmux session (create it if needed), launch a new window in the
 directory of the file being edited, and to simply raise the tmux window.
 
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (defvar wm/tmux-session-name "0")
 
 (defun wm/run-tmux (command)
@@ -266,13 +266,13 @@ directory of the file being edited, and to simply raise the tmux window.
 
 ** Browser
 For browsin...
- #+BEGIN_SRC emacs-lisp :tangle yes
+ #+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (wm/define-launcher wm/browser (or (getenv "X_BROWSER") "firefox"))
 #+END_SRC
 
 ** Audio Controls
 For dealing wh'cher beepers and y'ur wiretaps and whatnot.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (wm/define-launcher wm/volume-manager
                     (concat wm/terminal-emulator
                             " --title Volume -e 'pulsemixer || alsamixer'"))
@@ -285,7 +285,7 @@ For dealing wh'cher beepers and y'ur wiretaps and whatnot.
 ** Music
 Use mpd so your music doesn't stop when x crashes.
 also so it can always go to the wrong output.
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (wm/define-launcher wm/music-toggle "mpc toggle")
 (wm/define-launcher wm/music-next "mpc next")
 (wm/define-launcher wm/music-prev "mpc prev")
@@ -295,18 +295,18 @@ also so it can always go to the wrong output.
 #+END_SRC
 
 ** Taking Screenshots
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (wm/define-launcher wm/scrot
                     "scrot --select --exec 'mv $f ~/Pictures/screenshots'")
 #+END_SRC
 
 ** Screen Lock
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (wm/define-launcher wm/lock "dm-tool lock")
 #+END_SRC
 
 * Keybindings
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 ;; Enable or disable other emacs keybindings in exwm windows
 (exwm-input-set-key (kbd "s-SPC") 'exwm-input-toggle-keyboard)
 
@@ -353,6 +353,7 @@ also so it can always go to the wrong output.
 
 #+END_SRC
 * Footer
-#+BEGIN_SRC emacs-lisp :tangle yes
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
+(provide 'window-manager)
 ;;; window-manager.el ends here
 #+END_SRC
