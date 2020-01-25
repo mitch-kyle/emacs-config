@@ -53,6 +53,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#search-results][Search Results]]
     - [[#buffer-information][Buffer Information]]
   - [[#fonts][Fonts]]
+    - [[#coloured-emojis][Coloured Emojis]]
   - [[#ease-of-use][Ease Of Use]]
     - [[#remove-startup-clutter][Remove Startup Clutter]]
     - [[#large-file-warning][Large File Warning]]
@@ -128,7 +129,6 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
 - [[#footer][Footer]]
 - [[#tasks][Tasks]]
   - [[#recompile-on-save][Recompile on save]]
-  - [[#emojis][Emojis]]
 
 * Platform
 Things that inform the rest of the configuration.
@@ -327,6 +327,17 @@ Add font with better unicode coverage.
 #+BEGIN_SRC emacs-lisp :tangle init.el
 (when (member "Symbola" (font-family-list))
   (set-fontset-font t 'unicode "Symbola" nil 'prepend))
+#+END_SRC
+
+*** Coloured Emojis
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(when (and window-system
+           (member "Noto Color Emoji" (font-family-list)))
+  (set-fontset-font t 'unicode "Noto Color Emoji" nil 'prepend)
+
+  (defvar emojify-display-style)
+  (use-package emojify
+    :init (setq emojify-display-style 'unicode)))
 #+END_SRC
 
 ** Ease Of Use
@@ -629,11 +640,6 @@ Or the permission protected file:
 #+BEGIN_EXAMPLE
 sudo:root@localhost:/path/to/file
 #+END_EXAMPLE
-
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(with-eval-after-load "tramp"
-  (setq tramp-default-method "ssh"))
-#+END_SRC
 
 *** Sane Basic Editing Keybindings
 Make C-[x,c,v] work how you would expect in a text editor. /with-love
@@ -1207,7 +1213,8 @@ Interpret the *many* zsh configuration scripts as zsh and recognize the =.zsh= f
                (and buffer-file-name
                     (member (file-name-nondirectory buffer-file-name)
                             zsh-files))
-               (sh-set-shell "zsh")))))
+               (with-eval-after-load "sh-script"
+                 (sh-set-shell "zsh"))))))
 #+END_SRC
 
 ** Terraform
@@ -1244,6 +1251,5 @@ Add a marker so we know where the file ends.
 
 * Tasks
 ** TODO Recompile on save
-** TODO Emojis
 
 # readme.org ends here

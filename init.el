@@ -66,6 +66,14 @@
 (when (member "Symbola" (font-family-list))
   (set-fontset-font t 'unicode "Symbola" nil 'prepend))
 
+(when (and window-system
+           (member "Noto Color Emoji" (font-family-list)))
+  (set-fontset-font t 'unicode "Noto Color Emoji" nil 'prepend)
+
+  (defvar emojify-display-style)
+  (use-package emojify
+    :init (setq emojify-display-style 'unicode)))
+
 (setq inhibit-startup-screen  t
       initial-scratch-message nil)
 
@@ -242,9 +250,6 @@ to open 'filename' and set the cursor on line 'linenumber'."
                  groups))
        '((name . projectile-groups)
          (depth . -50))))))
-
-(with-eval-after-load "tramp"
-  (setq tramp-default-method "ssh"))
 
 (cua-mode t)
 
@@ -615,7 +620,8 @@ Inserted by installing org-mode or when a release is made."
                (and buffer-file-name
                     (member (file-name-nondirectory buffer-file-name)
                             zsh-files))
-               (sh-set-shell "zsh")))))
+               (with-eval-after-load "sh-script"
+                 (sh-set-shell "zsh"))))))
 
 (use-package terraform-mode
   :mode ("\\.tf\\'" "\\.tvars\\'"))

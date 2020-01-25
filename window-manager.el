@@ -20,13 +20,13 @@
 (require 'exwm-randr)
 (require 'seq)
 (defun wm/xrandr-update-outputs ()
-  (let* ((monitors   (car
-                      (read-from-string
-                        ;; TODO write in el
-                       (shell-command-to-string
-                        "xrandr | awk 'BEGIN {print \"(\"}
-                                       / connected/ {print \"\\\"\" $1 \"\\\"\"}
-                                       END {print \")\"}'"))))
+  (let* ((monitors   (let ((reg "^\\([^ ]*?\\) connected")
+                           (str (shell-command-to-string "xrandr"))
+                           (pos 0)
+                           (res))
+                       (while (setq pos (string-match reg str (1+ pos)))
+                         (push (match-string 1 str) res))
+                       (nreverse res)))
          (n-monitors (length monitors)))
     (setq exwm-randr-workspace-monitor-plist
           (apply 'append
@@ -175,8 +175,11 @@ may or may not spawn an x window"
 ;; Enable or disable other emacs keybindings in exwm windows
 (exwm-input-set-key (kbd "s-SPC") 'exwm-input-toggle-keyboard)
 
-;;Send the next key without it being captured by emacs
+;; Send the next key without it being captured by emacs
 (exwm-input-set-key (kbd "C-q") 'exwm-input-send-next-key)
+
+;; Floating Windows
+(exwm-input-set-key (kbd "C-c f") 'exwm-floating-toggle-floating)
 
 ;; Do stuff
 (exwm-input-set-key (kbd "s-`") 'wm/run-sh-async)
@@ -199,6 +202,7 @@ may or may not spawn an x window"
 (exwm-input-set-key (kbd "<XF86AudioPlay>") 'wm/music-toggle)
 (exwm-input-set-key (kbd "<XF86AudioNext>") 'wm/music-next)
 (exwm-input-set-key (kbd "<XF86AudioPrev>") 'wm/music-prev)
+
 ;; Some laptops put playback symbols on other keys for some reason
 (exwm-input-set-key (kbd "<XF86LaunchA>")   'wm/music-toggle)
 (exwm-input-set-key (kbd "<XF86Search>")    'wm/music-prev)
@@ -210,11 +214,12 @@ may or may not spawn an x window"
 (exwm-input-set-key (kbd "<XF86AudioMute>")        'wm/mute-toggle)
 (exwm-input-set-key (kbd "<XF86AudioMicMute>")     'wm/mute-mic)
 
-;; These work in hardware so don't need warning about undefined
-(exwm-input-set-key (kbd "<XF86MonBrightnessDown>") (lambda () (interactive)))
-(exwm-input-set-key (kbd "<XF86MonBrightnessUp>")   (lambda () (interactive)))
-(exwm-input-set-key (kbd "<XF86Sleep>")             (lambda () (interactive)))
-(exwm-input-set-key (kbd "<XF86WLAN>")              (lambda () (interactive)))
+;; These work in outside the window manager so don't need warning about undefined
+(let ((noop (lambda () (interactive))))
+  (exwm-input-set-key (kbd "<XF86MonBrightnessDown>") noop)
+  (exwm-input-set-key (kbd "<XF86MonBrightnessUp>")   noop)
+  (exwm-input-set-key (kbd "<XF86Sleep>")             noop)
+  (exwm-input-set-key (kbd "<XF86WLAN>")              noop))
 
 (provide 'window-manager)
 ;;; window-manager.el ends here
