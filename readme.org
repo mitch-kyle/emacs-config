@@ -19,7 +19,7 @@ probably me in the future /shout-out)
 ** Installation
 pretty straight-forward
 #+BEGIN_EXAMPLE
-git clone https://github.com/mitch-kyle/mkyle-emacs.git ~/.emacs.d
+git clone https://github.com/mitch-kyle/emacs-config.git ~/.emacs.d
 #+END_EXAMPLE
 
 ** Questions?
