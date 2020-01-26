@@ -477,14 +477,22 @@ Inserted by installing org-mode or when a release is made."
     (add-hook 'ediff-before-setup-hook 'mkyle/store-pre-ediff-winconfig)
 
     (defun mkyle/restore-pre-ediff-winconfig ()
+      (dolist (buf (list "*Ediff Control Panel*"
+                         "*ediff-errors*"
+                         "*ediff-diff*"
+                         "*Ediff Registry*"
+                         "*ediff-fine-diff*"
+                         ediff-buffer-A
+                         ediff-buffer-B
+                         ediff-buffer-C))
+        (condition-case nil
+            (let ((buf (get-buffer buf)))
+              (when buf (kill-buffer buf)))
+          (error nil)))
       (set-window-configuration mkyle/ediff-last-windows))
     (add-hook 'ediff-quit-hook 'mkyle/restore-pre-ediff-winconfig)
 
-    (defun mkyle/kill-ediff-buffers ()
-      (kill-buffer ediff-buffer-A)
-      (kill-buffer ediff-buffer-B)
-      (kill-buffer ediff-buffer-C))
-    (add-hook 'ediff-quit-hook 'mkyle/kill-ediff-buffers)
+    (setq-default ediff-keep-variants nil)
 
     ;; Don't start a new frame
     (setq-default ediff-window-setup-function 'ediff-setup-windows-plain)))
@@ -607,21 +615,21 @@ Inserted by installing org-mode or when a release is made."
 (use-package lua-mode
   :mode "\\.lua\\'")
 
-(let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc"
-                   "zprofile" "zshenv" "zshrc" ".zsh")))
-  (add-to-list 'auto-mode-alist '("\\.zsh\\'" . shell-script-mode))
-  (mapc (lambda (file)
-          (add-to-list 'auto-mode-alist
-                       `(,(format "\\%s\\'" file) . sh-mode)))
-        zsh-files)
-  (add-hook 'sh-mode-hook
-            (lambda ()
-              (when
-               (and buffer-file-name
-                    (member (file-name-nondirectory buffer-file-name)
-                            zsh-files))
-               (with-eval-after-load "sh-script"
-                 (sh-set-shell "zsh"))))))
+(with-eval-after-load "sh-script"
+  (let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc"
+                     "zprofile" "zshenv" "zshrc" ".zsh")))
+    (add-to-list 'auto-mode-alist '("\\.zsh\\'" . shell-script-mode))
+    (mapc (lambda (file)
+            (add-to-list 'auto-mode-alist
+                         `(,(format "\\%s\\'" file) . sh-mode)))
+          zsh-files)
+    (add-hook 'sh-mode-hook
+              (lambda ()
+                (when
+                  (and buffer-file-name
+                       (member (file-name-nondirectory buffer-file-name)
+                               zsh-files))
+                  (sh-set-shell "zsh"))))))
 
 (use-package terraform-mode
   :mode ("\\.tf\\'" "\\.tvars\\'"))
