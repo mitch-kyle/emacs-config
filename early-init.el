@@ -25,4 +25,6 @@
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 
+(setq ad-redefinition-action 'accept)
+
 ;; early-init.el ends here

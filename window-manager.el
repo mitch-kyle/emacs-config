@@ -18,7 +18,6 @@
 (exwm-enable)
 
 (require 'exwm-randr)
-(require 'seq)
 (defun wm/xrandr-update-outputs ()
   (let* ((monitors   (let ((reg "^\\([^ ]*?\\) connected")
                            (str (shell-command-to-string "xrandr"))
@@ -28,11 +27,14 @@
                          (push (match-string 1 str) res))
                        (nreverse res)))
          (n-monitors (length monitors)))
-    (setq exwm-randr-workspace-monitor-plist
-          (apply 'append
-                 (seq-map-indexed (lambda (montr idx)
-                                    (list idx montr))
-                                  monitors)))
+    (let ((i 0)
+          (result))
+      (dolist (m monitors result)
+        (setq result (cons m
+                           (cons i
+                                 result)))
+        (setq i (1+ i)))
+      (setq exwm-randr-workspace-monitor-plist (reverse result)))
     (while (> n-monitors (exwm-workspace--count))
       (exwm-workspace-add))
     (while (< n-monitors (exwm-workspace--count))
@@ -52,18 +54,11 @@
 
 (use-package framemove
   :after windmove
-  :commands (mkyle/windmove-framemove-hook fm-next-frame)
-  :init
-  (progn
-    (require 'seq)
-    ;; Framemove uses some old jazz but does so trivially, let's
-    ;; give it the function it wants
-    (defalias 'remove-if-not 'seq-filter))
-
+  :init (progn (require 'seq)
+               (defalias 'remove-if-not 'seq-filter))
   :config
   (progn
     (require 'windmove)
-
     (defun mkyle/windmove-framemove-hook (f dir &optional arg window)
       "Hook windmove to framemove properly"
       (condition-case nil
@@ -96,7 +91,8 @@
 (require 'exwm-systemtray)
 (exwm-systemtray-enable)
 
-(setq display-time-day-and-date t)
+(setq display-time-day-and-date t
+      display-time-default-load-average nil)
 (display-time-mode t)
 
 (use-package fancy-battery
@@ -110,67 +106,28 @@
                               '((name . exwm-group)
                                 (depth . -10))))
 
-(defmacro wm/define-launcher (fun-name command-and-args)
-  "Define an interactive function that invokes the shell command given"
-  `(defun ,fun-name ()
-     (interactive)
-     (start-process-shell-command "" nil ,command-and-args)))
+(require 'seq)
 
-(defun wm/run-sh-async (command)
-  "Interactive prompt to run a shell command in a child process which
-may or may not spawn an x window"
-  (interactive (list (read-shell-command "$ ")))
-  (start-process-shell-command "" nil command))
+(defun wm/browser ()
+  (interactive)
+  (let ((buf (seq-find (lambda (buffer)
+                         (with-current-buffer buffer
+                           (and (eq major-mode 'exwm-mode)
+                                (string= exwm-class-name "firefox")
+                                buffer)))
+                       (buffer-list))))
+    (if (and buf (buffer-live-p buf))
+        (switch-to-buffer buf)
+      (start-process-shell-command "" nil "firefox"))))
 
-(defvar wm/terminal-emulator "terminator")
-(defvar wm/preferred-shell "/usr/bin/zsh")
+(defun wm/scrot ()
+  (interactive)
+  (start-process-shell-command "" nil
+   "scrot --select --exec 'mv $f ~/Pictures/screenshots'"))
 
-(defvar wm/tmux-session-name "0")
-
-(defun wm/run-tmux (command)
-  "Run a command in a new window of the tmux session"
-  (interactive (list (read-shell-command "[tmux]$ ")))
-  (start-process-shell-command
-   "" nil
-   (concat wm/terminal-emulator
-           " -e 'tmux new-session -AD -c $HOME -s "
-           wm/tmux-session-name
-           "\\; new-window -c $(pwd) \""
-           command
-           "\"'")))
-
-(wm/define-launcher wm/tmux-shell-here
-                    (concat wm/terminal-emulator
-                            " -e 'tmux new-session -AD -c $HOME -s \""
-                            wm/tmux-session-name
-                            "\" \\; new-window -c $(pwd) "
-                            wm/preferred-shell "'"))
-
-(wm/define-launcher wm/tmux (concat wm/terminal-emulator
-                                    " -e 'tmux new-session -AD -c $HOME -s \""
-                                    wm/tmux-session-name "\"'"))
-
-(wm/define-launcher wm/browser (or (getenv "X_BROWSER") "firefox"))
-
-(wm/define-launcher wm/volume-manager
-                    (concat wm/terminal-emulator
-                            " --title Volume -e 'pulsemixer || alsamixer'"))
-(wm/define-launcher wm/volume-up "amixer set Master 5%+")
-(wm/define-launcher wm/volume-down "amixer set Master 5%-")
-(wm/define-launcher wm/mute-toggle "amixer set Master toggle")
-(wm/define-launcher wm/mute-mic "amixer set Mic toggle")
-
-(wm/define-launcher wm/music-toggle "mpc toggle")
-(wm/define-launcher wm/music-next "mpc next")
-(wm/define-launcher wm/music-prev "mpc prev")
-(wm/define-launcher wm/music-manager
-                    (concat wm/terminal-emulator
-                            " -e 'ncmpcpp -s playlist -S visualizer'"))
-
-(wm/define-launcher wm/scrot
-                    "scrot --select --exec 'mv $f ~/Pictures/screenshots'")
-
-(wm/define-launcher wm/lock "dm-tool lock")
+(defun wm/lock ()
+  (interactive)
+  (start-process-shell-command "" nil "dm-tool lock"))
 
 ;; Enable or disable other emacs keybindings in exwm windows
 (exwm-input-set-key (kbd "s-SPC") 'exwm-input-toggle-keyboard)
@@ -182,37 +139,37 @@ may or may not spawn an x window"
 (exwm-input-set-key (kbd "C-c f") 'exwm-floating-toggle-floating)
 
 ;; Do stuff
-(exwm-input-set-key (kbd "s-`") 'wm/run-sh-async)
-(exwm-input-set-key (kbd "s-!") 'wm/run-tmux)
+(exwm-input-set-key (kbd "s-`")        'mkyle/run-sh-async)
+(exwm-input-set-key (kbd "s-!")        'vtermux-execute)
+(exwm-input-set-key (kbd "s-<return>") 'vtermux)
+(add-to-list 'exwm-input-prefix-keys 's-return) ;; vtermux
 
 ;; Apps
 (exwm-input-set-key (kbd "s-x i")             'wm/browser)
-(exwm-input-set-key (kbd "s-x v")             'wm/volume-manager)
+(exwm-input-set-key (kbd "s-x v")             'mkyle/volume)
 (exwm-input-set-key (kbd "s-x l")             'wm/lock)
-(exwm-input-set-key (kbd "s-x <return>")      'wm/tmux-shell-here)
-(exwm-input-set-key (kbd "s-<return>")        'wm/tmux)
 (exwm-input-set-key (kbd "<XF86Launch1>")     'wm/scrot)
 (exwm-input-set-key (kbd "<XF86ScreenSaver>") 'wm/lock)
 
 ;; Music
-(exwm-input-set-key (kbd "s-x m")           'wm/music-manager)
-(exwm-input-set-key (kbd "s-x M-<down>")    'wm/music-toggle)
-(exwm-input-set-key (kbd "s-x M-<left>")    'wm/music-prev)
-(exwm-input-set-key (kbd "s-x M-<right>")   'wm/music-next)
-(exwm-input-set-key (kbd "<XF86AudioPlay>") 'wm/music-toggle)
-(exwm-input-set-key (kbd "<XF86AudioNext>") 'wm/music-next)
-(exwm-input-set-key (kbd "<XF86AudioPrev>") 'wm/music-prev)
+(exwm-input-set-key (kbd "s-x m")           'mkyle/music)
+(exwm-input-set-key (kbd "s-x M-<down>")    'mkyle/music-toggle)
+(exwm-input-set-key (kbd "s-x M-<left>")    'mkyle/music-prev)
+(exwm-input-set-key (kbd "s-x M-<right>")   'mkyle/music-next)
+(exwm-input-set-key (kbd "<XF86AudioPlay>") 'mkyle/music-toggle)
+(exwm-input-set-key (kbd "<XF86AudioNext>") 'mkyle/music-next)
+(exwm-input-set-key (kbd "<XF86AudioPrev>") 'mkyle/music-prev)
 
 ;; Some laptops put playback symbols on other keys for some reason
-(exwm-input-set-key (kbd "<XF86LaunchA>")   'wm/music-toggle)
-(exwm-input-set-key (kbd "<XF86Search>")    'wm/music-prev)
-(exwm-input-set-key (kbd "<XF86Explorer>")  'wm/music-next)
+(exwm-input-set-key (kbd "<XF86LaunchA>")   'mkyle/music-toggle)
+(exwm-input-set-key (kbd "<XF86Search>")    'mkyle/music-prev)
+(exwm-input-set-key (kbd "<XF86Explorer>")  'mkyle/music-next)
 
 ;; Audio Control
-(exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") 'wm/volume-up)
-(exwm-input-set-key (kbd "<XF86AudioLowerVolume>") 'wm/volume-down)
-(exwm-input-set-key (kbd "<XF86AudioMute>")        'wm/mute-toggle)
-(exwm-input-set-key (kbd "<XF86AudioMicMute>")     'wm/mute-mic)
+(exwm-input-set-key (kbd "<XF86AudioRaiseVolume>") 'mkyle/volume-up)
+(exwm-input-set-key (kbd "<XF86AudioLowerVolume>") 'mkyle/volume-down)
+(exwm-input-set-key (kbd "<XF86AudioMute>")        'mkyle/volume-mute)
+(exwm-input-set-key (kbd "<XF86AudioMicMute>")     'mkyle/volume-mute-mic)
 
 ;; These work in outside the window manager so don't need warning about undefined
 (let ((noop (lambda () (interactive))))

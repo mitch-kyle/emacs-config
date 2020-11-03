@@ -38,20 +38,26 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#maximize-screen-space][Maximize Screen Space]]
     - [[#disable-modeline][Disable Modeline]]
     - [[#short-answers][Short Answers]]
+    - [[#silence-redefinition-warnings][Silence Redefinition Warnings]]
     - [[#early-init-footer][Early Init Footer]]
   - [[#file-header][File Header]]
   - [[#package-manager---straightel][Package Manager - straight.el]]
   - [[#package-configuration---use-package][Package Configuration - use-package]]
   - [[#compiling-this-project][Compiling this Project]]
+    - [[#org-early-load][Org Early Load]]
 - [[#look-and-feel][Look And Feel]]
   - [[#executable-path][Executable Path]]
   - [[#manage-config-directory][Manage Config Directory]]
     - [[#no-litter][No Litter]]
     - [[#custom][Custom]]
+  - [[#theme][Theme]]
+    - [[#theme-hook][Theme Hook]]
+    - [[#settings][Settings]]
   - [[#mode-line][Mode Line]]
     - [[#hide-minor-modes][Hide Minor Modes]]
     - [[#search-results][Search Results]]
     - [[#buffer-information][Buffer Information]]
+    - [[#spaceline][Spaceline]]
   - [[#fonts][Fonts]]
     - [[#coloured-emojis][Coloured Emojis]]
   - [[#ease-of-use][Ease Of Use]]
@@ -67,6 +73,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#save-command-history][Save Command History]]
     - [[#splitting-windows][Splitting Windows]]
     - [[#finding-the-cursor][Finding the Cursor]]
+    - [[#remove-suspend-frame-keybinding][Remove suspend-frame keybinding]]
   - [[#navigation][Navigation]]
     - [[#list-buffers---ibuffer][List Buffers - IBuffer]]
       - [[#ibuffer-columns][IBuffer Columns]]
@@ -94,21 +101,10 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
     - [[#spell-checking---flyspell][Spell Checking - flyspell]]
     - [[#code-snippets---yasnippets][Code Snippets - yasnippets]]
   - [[#x-windows][X Windows]]
-    - [[#colour-scheme][Colour Scheme]]
-    - [[#mode-line-eye-candy---spaceline][Mode Line Eye-candy - Spaceline]]
     - [[#window-divider][Window Divider]]
     - [[#transparency][Transparency]]
-- [[#major-modes][Major Modes]]
+- [[#language-specific-packages][Language Specific Packages]]
   - [[#org-mode][Org Mode]]
-    - [[#straightel-workaround][straight.el Workaround]]
-    - [[#org-packages][Org Packages]]
-  - [[#git][Git]]
-    - [[#magit][Magit]]
-    - [[#git-file-modes][Git file modes]]
-    - [[#mergetool][Mergetool]]
-  - [[#restclient][Restclient]]
-  - [[#irc][IRC]]
-  - [[#arch-user-repositories][Arch User Repositories]]
   - [[#emacs-lisp][Emacs Lisp]]
     - [[#documentation][Documentation]]
     - [[#autocompile][Autocompile]]
@@ -125,7 +121,24 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
   - [[#lua][Lua]]
   - [[#zsh][Zsh]]
   - [[#terraform][Terraform]]
-- [[#window-manager-exwm][Window Manager EXWM]]
+- [[#software-distribution-specific-packages][Software Distribution Specific Packages]]
+  - [[#arch][Arch]]
+  - [[#guix][Guix]]
+- [[#miscellaneous-packages][Miscellaneous Packages]]
+  - [[#git][Git]]
+    - [[#magit][Magit]]
+    - [[#git-file-modes][Git file modes]]
+    - [[#mergetool][Mergetool]]
+  - [[#restclient][Restclient]]
+  - [[#irc][IRC]]
+  - [[#persistent-scratch][Persistent Scratch]]
+  - [[#terminal][Terminal]]
+    - [[#vtermux][vtermux]]
+  - [[#external-applications][External Applications]]
+    - [[#persistent-buffers][Persistent Buffers]]
+    - [[#volume][Volume]]
+    - [[#music][Music]]
+  - [[#window-manager---exwm][Window Manager - EXWM]]
 - [[#footer][Footer]]
 - [[#tasks][Tasks]]
   - [[#recompile-on-save][Recompile on save]]
@@ -181,7 +194,6 @@ Disable modeline until we apply our sugar later
 (setq mode-line-format nil)
 #+END_SRC
 
-
 *** Short Answers
 Use 'y' or 'n' rather than 'yes' or 'no'. This should improve productivity when answering binary questions by up
 to 60% according to Homer Simpson.
@@ -190,6 +202,12 @@ to 60% according to Homer Simpson.
 (defalias 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
+*** Silence Redefinition Warnings
+Prevent warnings when advice is added to functions.
+[[https://andrewjamesjohnson.com/suppressing-ad-handle-definition-warnings-in-emacs/][More Information]]
+#+BEGIN_SRC emacs-lisp :tangle early-init.el
+(setq ad-redefinition-action 'accept)
+#+END_SRC
 
 *** Early Init Footer
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
@@ -252,12 +270,49 @@ A function to rebuild this project if it's changed since the last time it was bu
                                          user-emacs-directory))))
 #+END_SRC
 
+*** Org Early Load
+Because straight.el can't properly compile org yet, we need to define the org-version function
+ourselves to prevent the old builtin org from being loaded instead.
+
+#+BEGIN_SRC emacs-lisp :tangle init.el :noweb yes
+(use-package git)
+(when (require 'git nil t)
+  (defun org-git-version ()
+    "The Git version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (git-run "describe"
+                "--match=release\*"
+                "--abbrev=6"
+                "HEAD"))))
+
+  (defun org-release ()
+    "The release version of org-mode.
+Inserted by installing org-mode or when a release is made."
+    (let ((git-repo (expand-file-name "straight/repos/org/"
+                                      user-emacs-directory)))
+      (string-trim
+       (string-remove-prefix
+        "release_"
+        (git-run "describe"
+                 "--match=release\*"
+                 "--abbrev=0"
+                 "HEAD")))))
+
+  (provide 'org-version))
+
+<<load-org>>
+#+END_SRC
+
 * Look And Feel
 ** Executable Path
 Set the path to the environment variable PATH always
 #+BEGIN_SRC emacs-lisp :tangle init.el
 (use-package exec-path-from-shell
-  :config (exec-path-from-shell-initialize))
+  :config
+  (exec-path-from-shell-initialize))
 #+END_SRC
 
 ** Manage Config Directory
@@ -284,6 +339,31 @@ Compile custom file when it changes.
   "Recompile custom files after saving to it"
   (byte-compile-file custom-file))
  #+END_SRC
+
+** Theme
+*** Theme Hook
+There's no hook that runs after a theme is enabled so lets make one.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(defvar mkyle/after-enable-theme-hook nil
+  "Hook to run after a theme is enabled.")
+
+(advice-add 'enable-theme :after
+            (lambda (theme)
+              (unless (eq theme 'user)
+                (run-hooks 'mkyle/after-enable-theme-hook)))
+            '((name . mkyle/after-enable-theme-hook)))
+#+END_SRC
+
+*** Settings
+This is where we load the theme, it handles colors and text effects
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package monokai-theme
+  :straight (monokai-theme :type git
+                           :host github
+                           :repo "mitch-kyle/monokai-emacs")
+  :ensure t
+  :config (load-theme 'monokai t))
+#+END_SRC
 
 ** Mode Line
 The modeline displays information about the buffer like buffer name and what modes are currently active
@@ -317,10 +397,95 @@ Show cursor position in buffer
 (column-number-mode t)
 #+END_SRC
 
+*** Spaceline
+Spaceline is a nice looking mode line package based on powerline from the
+[[http://spacemacs.org/][spacemacs]] distribution
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package spaceline
+  :config
+  (progn
+    (require 'spaceline)
+    (require 'spaceline-segments)
+
+    (setq-default anzu-cons-mode-line-p           nil
+                  powerline-default-separator     'contour
+                  spaceline-minor-modes-separator " ")
+
+    ;; Projectile doesn't really fit with the other minor modes
+    ;; but the menu might be useful. let's move it to it's own
+    ;; segment
+    (spaceline-define-segment mkyle/projectile
+      "Display project name with projectile menu"
+      (when (and (boundp projectile-project-root)
+                 (projectile-project-root))
+        (propertize (projectile-project-name)
+          'local-map (let ((map (make-sparse-keymap)))
+                       (define-key map [mode-line down-mouse-1]
+                                   projectile-mode-menu)
+                        map)
+          'mouse-face 'mode-line-highlight)))
+
+
+    (defun mkyle/spaceline-reset ()
+      (spaceline-compile)
+      (setq-default mode-line-format
+                    '("%e" (:eval (spaceline-ml-main)))))
+
+    (defun mkyle/spaceline-theme (&rest additional-segments)
+      "Spaceline emacs theme with some tweaks"
+      (spaceline-compile
+       `((((((persp-name :fallback workspace-number) window-number)
+            :separator "•")
+           buffer-modified
+           buffer-size)
+          :face highlight-face
+          :priority 100)
+         (anzu :priority 95)
+         auto-compile
+         ((buffer-id remote-host)
+          :priority 98)
+         (major-mode :priority 79)
+         (process :when active)
+         ((flycheck-error flycheck-warning flycheck-info)
+          :when active
+          :priority 89)
+         (minor-modes :when active
+                      :priority 9)
+         (mu4e-alert-segment :when active)
+         (erc-track :when active)
+         (version-control :when active
+                          :priority 78)
+         (mkyle/projectile :priority 20)
+         (org-pomodoro :when active)
+         (org-clock :when active)
+         nyan-cat)
+       `(which-function
+         (python-pyvenv :fallback python-pyenv)
+         (purpose :priority 94)
+         (battery :when active)
+         (selection-info :priority 95)
+         input-method
+         ((point-position line-column)
+          :separator " • "
+          :priority 96)
+         ((buffer-encoding-abbrev)
+          :priority 9)
+         (global :when active)
+         ,@additional-segments
+         (buffer-position :priority 99)
+         (hud :priority 99)))
+      (setq-default mode-line-format
+                    '("%e" (:eval (spaceline-ml-main)))))
+
+    (mkyle/spaceline-theme)
+    (add-hook 'mkyle/after-enable-theme-hook 'mkyle/spaceline-reset)))
+#+END_SRC
+
 ** Fonts
 [[http://terminus-font.sourceforge.net/][Terminus Font]] is designed for terminals and source code.
 #+BEGIN_SRC emacs-lisp :tangle init.el
-(set-frame-font "xos4 Terminus 12" nil (frame-list))
+(when (member "Terminus" (font-family-list))
+  (set-frame-font "Terminus 12" nil (frame-list)))
 #+END_SRC
 
 Add font with better unicode coverage.
@@ -488,6 +653,11 @@ Show the cursor when moving after big movements in the window
 (use-package beacon
   :diminish beacon-mode
   :config (beacon-mode +1))
+#+END_SRC
+*** Remove suspend-frame keybinding
+This keybinding makes sense for a terminal editor but occasionally I hit it by accident while using exwm and it just destroys one's train of thought.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(global-unset-key (kbd "C-x C-z"))
 #+END_SRC
 
 ** Navigation
@@ -770,92 +940,6 @@ Auto fill common code blocks
 #+END_SRC
 
 ** X Windows
-*** Colour Scheme
-Bright colours on a dull background; pleasing on the eyes. Only load when in a window-system because it
-looks horrible on a typical terminal
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package monokai-theme
-  :if window-system
-  :config (load-theme 'monokai t))
-#+END_SRC
-
-*** Mode Line Eye-candy - Spaceline
-Spaceline is a nice looking mode line package based on powerline from the
-[[http://spacemacs.org/][spacemacs]] distribution
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package spaceline
-  :config
-  (progn
-    (require 'spaceline)
-    (require 'spaceline-segments)
-
-    (setq-default anzu-cons-mode-line-p           nil
-                  powerline-default-separator     'contour
-                  spaceline-minor-modes-separator " ")
-
-    ;; Projectile doesn't really fit with the other minor modes
-    ;; but the menu might be useful. let's move it to it's own
-    ;; segment
-    (spaceline-define-segment mkyle/projectile
-      "Display project name with projectile menu"
-      (when (and (boundp projectile-project-root)
-                 (projectile-project-root))
-        (propertize (projectile-project-name)
-          'local-map (let ((map (make-sparse-keymap)))
-                       (define-key map [mode-line down-mouse-1]
-                                   projectile-mode-menu)
-                        map)
-          'mouse-face 'mode-line-highlight)))
-
-    (defun mkyle/spaceline-theme (&rest additional-segments)
-      "Spaceline emacs theme with some tweaks"
-      (spaceline-compile
-       `((((((persp-name :fallback workspace-number) window-number)
-            :separator "•")
-           buffer-modified
-           buffer-size)
-          :face highlight-face
-          :priority 100)
-         (anzu :priority 95)
-         auto-compile
-         ((buffer-id remote-host)
-          :priority 98)
-         (major-mode :priority 79)
-         (process :when active)
-         ((flycheck-error flycheck-warning flycheck-info)
-          :when active
-          :priority 89)
-         (minor-modes :when active
-                      :priority 9)
-         (mu4e-alert-segment :when active)
-         (erc-track :when active)
-         (version-control :when active
-                          :priority 78)
-         (mkyle/projectile :priority 20)
-         (org-pomodoro :when active)
-         (org-clock :when active)
-         nyan-cat)
-       `(which-function
-         (python-pyvenv :fallback python-pyenv)
-         (purpose :priority 94)
-         (battery :when active)
-         (selection-info :priority 95)
-         input-method
-         ((point-position line-column)
-          :separator " • "
-          :priority 96)
-         ((buffer-encoding-abbrev)
-          :priority 9)
-         (global :when active)
-         ,@additional-segments
-         (buffer-position :priority 99)
-         (hud :priority 99)))
-      (setq-default mode-line-format
-                    '("%e" (:eval (spaceline-ml-main)))))
-
-    (mkyle/spaceline-theme)))
-#+END_SRC
-
 *** Window Divider
 Make the vertical window divider available but only one pixel wide
 #+BEGIN_SRC emacs-lisp :tangle init.el
@@ -885,46 +969,13 @@ I like the "glass editing window" effect. This sets it that way by default and g
                  (set-frame-parameter nil 'alpha '(95 . 95)))))
 #+END_SRC
 
-* Major Modes
+* Language Specific Packages
+Packages related to editing different file formats
+
 ** Org Mode
 Org mode is used to build this document.
-
-*** straight.el Workaround
-Because straight.el can't properly compile org yet, we need to define the org-version function
-ourselves to prevent the old builtin org from being loaded instead.
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package git)
-(when (require 'git nil t)
-  (defun org-git-version ()
-    "The Git version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (git-run "describe"
-                "--match=release\*"
-                "--abbrev=6"
-                "HEAD"))))
-
-  (defun org-release ()
-    "The release version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (string-remove-prefix
-        "release_"
-        (git-run "describe"
-                 "--match=release\*"
-                 "--abbrev=0"
-                 "HEAD")))))
-
-  (provide 'org-version))
- #+END_SRC
-
-*** Org Packages
-Load org, nothing fancy
-#+BEGIN_SRC emacs-lisp :tangle init.el
+#+NAME: load-org
+#+BEGIN_SRC emacs-lisp :tangle no
 (use-package org
   :mode ("\\.org\\'" . org-mode)
   :config (progn (add-hook 'org-mode-hook 'flyspell-mode)
@@ -936,119 +987,6 @@ Generating table of contents in org files with =:TOC:= tag
 (use-package toc-org
   :after org
   :hook ((org-mode) . toc-org-mode))
-#+END_SRC
-
-** Git
-A version control tool created by Linus Torvalds
-
-*** Magit
-Magit is nice front-end to git. C-c m to open magit-status popup
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package magit
-  :defer t
-  :bind (("C-x g" . magit-status)))
-#+END_SRC
-
-*** Git file modes
-Modes for editing git files e.g =.gitignore=
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package git-modes
-  :defer t)
-#+END_SRC
-
-*** Mergetool
-To use emacs as a git mergetool, you need to add something like the following to =~/.gitconfig=
-#+BEGIN_EXAMPLE
-[mergetool.ediff]
-  cmd = emacsclient --eval \"(ediff-merge-files-with-ancestor \\\"$LOCAL\\\" \\\"$REMOTE\\\" \\\"$BASE\\\" nil \\\"$MERGED\\\")\"
-[merge]
-  tool = ediff
-#+END_EXAMPLE
-
-Cleanup ediff buffers and restore window configuration when finished.
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package ediff
-  :defer t
-  :config
-  (progn
-    (defun mkyle/ediff-write-merge-buffer ()
-      (let ((file ediff-merge-store-file))
-        (set-buffer ediff-buffer-C)
-        (write-region (point-min) (point-max) file)
-        (message "Merge buffer saved in: %s" file)
-        (set-buffer-modified-p nil)
-        (sit-for 1)))
-    (add-hook 'ediff-quit-merge-hook 'mkyle/ediff-write-merge-buffer)
-
-    (defvar mkyle/ediff-last-windows nil)
-
-    (defun mkyle/store-pre-ediff-winconfig ()
-      (setq mkyle/ediff-last-windows (current-window-configuration)))
-    (add-hook 'ediff-before-setup-hook 'mkyle/store-pre-ediff-winconfig)
-
-    (defun mkyle/restore-pre-ediff-winconfig ()
-      (dolist (buf (list "*Ediff Control Panel*"
-                         "*ediff-errors*"
-                         "*ediff-diff*"
-                         "*Ediff Registry*"
-                         "*ediff-fine-diff*"
-                         ediff-buffer-A
-                         ediff-buffer-B
-                         ediff-buffer-C))
-        (condition-case nil
-            (let ((buf (get-buffer buf)))
-              (when buf (kill-buffer buf)))
-          (error nil)))
-      (set-window-configuration mkyle/ediff-last-windows))
-    (add-hook 'ediff-quit-hook 'mkyle/restore-pre-ediff-winconfig)
-
-    (setq-default ediff-keep-variants nil)
-
-    ;; Don't start a new frame
-    (setq-default ediff-window-setup-function 'ediff-setup-windows-plain)))
-#+END_SRC
-
-** Restclient
-make http requests with =C-c C-v=
-
-See [[https://github.com/pashky/restclient.el][restclient github]] for user guide
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package restclient
-  :mode ("\\.rest\\'" . restclient-mode))
-#+END_SRC
-***** TODO Add documentation
-** IRC
-Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long buffers,
-enable logging and other things.
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(use-package erc
-  :defer t
-  :commands (erc)
-  :config
-  (progn
-    (setq erc-query-display 'buffer
-          erc-interpret-mirc-color t
-          erc-server-coding-system '(utf-8 . utf-8)
-          erc-save-buffer-on-part t
-          erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
-                                    "324" "329" "332" "333" "353" "477"))
-
-    (erc-truncate-mode +1)
-    (erc-track-mode t)
-
-    (when (require 'erc-log nil t)
-      (unless (file-exists-p erc-log-channels-directory)
-        (mkdir erc-log-channels-directory t)))
-
-    (when (require 'erc-spelling nil t)
-      (erc-spelling-mode 1))))
-#+END_SRC
-
-** Arch User Repositories
-Search and fetch arch recipes from the AUR.
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(when (executable-find "makepkg")
-  (use-package aurel :defer t))
 #+END_SRC
 
 ** Emacs Lisp
@@ -1071,21 +1009,8 @@ Automatically compile emacs lisp files from the user configuration directory =~/
   (progn
     (setq auto-compile-display-buffer    nil
           auto-compile-mode-line-counter t)
-    (auto-compile-on-load-mode)
-    (auto-compile-on-save-mode)))
-
-(defun mkyle/elisp-recompile-elc-on-save ()
-  "Recompile your elc when saving an elisp file."
-  (add-hook 'after-save-hook
-    (lambda ()
-      (when (and (string-prefix-p user-emacs-directory
-                                  (file-truename buffer-file-name))
-                 (file-exists-p (byte-compile-dest-file buffer-file-name)))
-        (emacs-lisp-byte-compile)))
-        nil
-        t))
-
-(add-hook 'emacs-lisp-mode-hook 'mkyle/elisp-recompile-elc-on-save)
+    (auto-compile-on-load-mode +1)
+    (auto-compile-on-save-mode +1)))
 #+END_SRC
 
 ** Conf Files
@@ -1134,7 +1059,6 @@ Cider is a featureful repl for clojure development
 
 ** CMake
 It's like make only less accessible to new users. you're welcome. - GNU, probably
-
 #+BEGIN_SRC emacs-lisp :tangle init.el
 (use-package cmake-mode
   :mode ("CMakeLists\\.txt\\'" "\\.cmake\\'")
@@ -1208,7 +1132,9 @@ Because 'X' won't mod itself
 ** Zsh
 Interpret the *many* zsh configuration scripts as zsh and recognize the =.zsh= file extension
 #+BEGIN_SRC emacs-lisp :tangle init.el
-(with-eval-after-load "sh-script"
+(use-package sh-script
+  :ensure t
+  :config
   (let ((zsh-files '("zlogin" "zlogin" "zlogout" "zpreztorc"
                      "zprofile" "zshenv" "zshrc" ".zsh")))
     (add-to-list 'auto-mode-alist '("\\.zsh\\'" . shell-script-mode))
@@ -1233,7 +1159,295 @@ I'm just sour because I think one should use scheme should to configure everythi
   :mode ("\\.tf\\'" "\\.tvars\\'"))
 #+END_SRC
 
-* Window Manager EXWM
+* Software Distribution Specific Packages
+Packages specific to different software distributions or systems.
+
+** Arch
+Search and fetch arch recipes from the AUR.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package aurel
+  :when (executable-find "makepkg")
+  :defer t)
+#+END_SRC
+
+** Guix
+A build system / package manager / os definition system / waffle-iron all written in guile scheme.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package guix
+  :when (executable-find "guix")
+  :commands (guix)
+  :bind (("s-x p" . guix)))
+#+END_SRC
+
+* Miscellaneous Packages
+** Git
+A version control tool created by Linus Torvalds
+
+*** Magit
+Magit is nice front-end to git. C-c m to open magit-status popup
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package magit
+  :defer t
+  :bind (("C-x g" . magit-status)))
+#+END_SRC
+
+*** Git file modes
+Modes for editing git files e.g =.gitignore=
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package git-modes
+  :defer t)
+#+END_SRC
+
+*** Mergetool
+To use emacs as a git mergetool, you need to add something like the following to =~/.gitconfig=
+#+BEGIN_EXAMPLE
+[mergetool.ediff]
+  cmd = emacsclient --eval \"(ediff-merge-files-with-ancestor \\\"$LOCAL\\\" \\\"$REMOTE\\\" \\\"$BASE\\\" nil \\\"$MERGED\\\")\"
+[merge]
+  tool = ediff
+#+END_EXAMPLE
+
+Cleanup ediff buffers and restore window configuration when finished.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package ediff
+  :defer t
+  :config
+  (progn
+    (defun mkyle/ediff-write-merge-buffer ()
+      (let ((file ediff-merge-store-file))
+        (set-buffer ediff-buffer-C)
+        (write-region (point-min) (point-max) file)
+        (message "Merge buffer saved in: %s" file)
+        (set-buffer-modified-p nil)
+        (sit-for 1)))
+    (add-hook 'ediff-quit-merge-hook 'mkyle/ediff-write-merge-buffer)
+
+    (defvar mkyle/ediff-last-windows nil)
+
+    (defun mkyle/store-pre-ediff-winconfig ()
+      (setq mkyle/ediff-last-windows (current-window-configuration)))
+    (add-hook 'ediff-before-setup-hook 'mkyle/store-pre-ediff-winconfig)
+
+    (defun mkyle/restore-pre-ediff-winconfig ()
+      (dolist (buf (list ediff-buffer-A
+                         ediff-buffer-B
+                         ediff-buffer-C
+                         "*Ediff Control Panel*"
+                         "*ediff-errors*"
+                         "*ediff-diff*"
+                         "*Ediff Registry*"
+                         "*ediff-fine-diff*"))
+
+        (set-window-configuration mkyle/ediff-last-windows)
+        (condition-case nil
+            (let ((buf (get-buffer buf)))
+              (when buf (kill-buffer buf)))
+          (error nil))))
+    (add-hook 'ediff-quit-hook 'mkyle/restore-pre-ediff-winconfig)
+
+    (setq-default ediff-keep-variants nil)
+
+    ;; Don't start a new frame
+    (setq-default ediff-window-setup-function 'ediff-setup-windows-plain)))
+#+END_SRC
+
+** Restclient
+make http requests with =C-c C-v=
+
+See [[https://github.com/pashky/restclient.el][restclient github]] for user guide
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package restclient
+  :mode ("\\.rest\\'" . restclient-mode))
+#+END_SRC
+
+** IRC
+Internet relay chat appliance for emacs. Tune erc to use utf-8, truncate long buffers,
+enable logging and other things.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package erc
+  :defer t
+  :commands (erc)
+  :config
+  (progn
+    (setq erc-query-display 'buffer
+          erc-interpret-mirc-color t
+          erc-server-coding-system '(utf-8 . utf-8)
+          erc-save-buffer-on-part t
+          erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
+                                    "324" "329" "332" "333" "353" "477"))
+
+    (erc-truncate-mode +1)
+    (erc-track-mode t)
+
+    (when (require 'erc-log nil t)
+      (unless (file-exists-p erc-log-channels-directory)
+        (mkdir erc-log-channels-directory t)))
+
+    (when (require 'erc-spelling nil t)
+      (erc-spelling-mode 1))))
+#+END_SRC
+
+** Persistent Scratch
+Save the scratch in case I write something down that shouldn't be in the scratch buffer
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package persistent-scratch
+  :commands (persistent-scratch-restore
+             persistent-scratch-autosave-mode
+             persistent-scratch-mode)
+  :diminish persistent-scratch-mode
+  :config
+  (progn
+    (persistent-scratch-setup-default)
+    (persistent-scratch-restore)))
+
+(defun mkyle/scratch ()
+  "Get or create the scratch buffer"
+  (interactive)
+  (unless (get-buffer "*scratch*")
+    (persistent-scratch-restore))
+  (switch-to-buffer (get-buffer "*scratch*"))
+  (lisp-interaction-mode)
+  (persistent-scratch-mode +1)
+  (persistent-scratch-autosave-mode +1))
+
+(global-set-key (kbd "s-x s") 'mkyle/scratch)
+#+END_SRC
+
+** Terminal
+vterm is an integrated terminal emulator using modules.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(use-package vterm
+  :commands (vterm)
+  :init (setq vterm-always-compile-module t
+              vterm-buffer-name-string    "*vterm* %s")
+  :config
+  (progn
+    (define-key vterm-copy-mode-map (kbd "C-c C-c") 'copy-region-as-kill)
+    ;; even with this hack it doesn't handle cua-mode very well
+    (add-hook 'vterm-mode-hook (lambda ()
+                                 (linum-mode -1)
+                                 (make-local-variable 'cua-enable-cua-keys)
+                                 (setq cua-enable-cua-keys nil)
+                                 (local-set-key (kbd "C-v") 'vterm-yank)
+                                 (local-set-key (kbd "C-z") 'vterm-undo)))
+
+    (with-eval-after-load "ibuffer-dynamic-groups"
+      (ibuffer-dynamic-groups-add (lambda (groups)
+                                    (append '(("Terminals" (mode . vterm-mode)))
+                                            groups))
+                                 '((name . vterm-group)
+                                   (depth . -9))))))
+
+(defun mkyle/vterm-execute (command)
+  "Start a vterm session with the given command"
+   (interactive (list (read-shell-command "$ ")))
+   (let ((vterm-shell command))
+     (vterm)))
+
+(global-set-key (kbd "s-!") #'mkyle/vterm-execute)
+(global-set-key (kbd "s-`") #'mkyle/run-sh-async)
+#+END_SRC
+
+*** vtermux
+#+begin_src emacs-lisp :tangle init.el
+(use-package vtermux
+  :straight (vtermux :type   git
+                     :host   github
+                     :repo   "mitch-kyle/vtermux"
+                     :branch "main")
+  :after vterm
+  :commands (vtermux vtermux-mode)
+  :bind (:map global-map
+         ("s-<return>" . vtermux))
+  :config
+  (progn (require 'vtermux-spaceline)
+         (vtermux-spaceline-enable)))
+#+end_src
+
+** External Applications
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(defun mkyle/run-sh-async (&optional command)
+  "Interactive prompt to run a shell command in a child process which
+may or may not spawn an x window"
+  (interactive (list (read-shell-command "$ ")))
+  (when command
+    (start-process-shell-command "" nil command)))
+#+END_SRC
+
+*** Persistent Buffers
+Used for tracking the vterm buffers running the volume and music apps
+
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(defvar mkyle/labeled-buffers (make-hash-table :weakness 'value))
+
+(defun mkyle/labeled-buffer (label create-new)
+  "switch to labeled buffer if buffer does not exist create it by
+invoking `create-new'."
+  (let ((buf (gethash label mkyle/labeled-buffers)))
+    (if (and buf (buffer-live-p buf))
+        (switch-to-buffer buf)
+      (funcall create-new)
+      (puthash label (current-buffer) mkyle/labeled-buffers)
+      nil)))
+#+END_SRC
+
+*** Volume
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(defun mkyle/volume ()
+  (interactive)
+   (mkyle/labeled-buffer 'mkyle/volume
+                        (lambda ()
+                          (let ((vterm-shell (if (executable-find "pulsemixer")
+                                                 "pulsemixer"
+                                               "alsamixer"))
+                                (vterm-buffer-name-string "*volume* - %s"))
+                            (vterm)))))
+
+(defun mkyle/volume-down ()
+  (interactive)
+  (start-process-shell-command "" nil "amixer set Master 5%-"))
+
+(defun mkyle/volume-up ()
+  (interactive)
+  (start-process-shell-command "" nil "amixer set Master 5%+"))
+
+(defun mkyle/volume-mute ()
+  (interactive)
+  (start-process-shell-command "" nil "amixer set Master toggle"))
+
+(defun mkyle/volume-mute-mic ()
+  (interactive)
+  (start-process-shell-command "" nil "amixer set Mic toggle"))
+
+(global-set-key (kbd "s-x v") 'mkyle/volume)
+#+END_SRC
+
+*** Music
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(defun mkyle/music ()
+  (interactive)
+  (mkyle/labeled-buffer 'mkyle/music
+                        (lambda ()
+                          (let ((vterm-shell "ncmpcpp -s playlist -S visualizer")
+                                (vterm-buffer-name-string "*music* - %s"))
+                            (vterm)))))
+
+(defun mkyle/music-next ()
+  (interactive)
+  (start-process-shell-command "" nil "mpc next"))
+
+(defun mkyle/music-prev ()
+  (interactive)
+  (start-process-shell-command "" nil "mpc prev"))
+
+(defun mkyle/music-toggle ()
+  (interactive)
+  (start-process-shell-command "" nil "mpc toggle"))
+
+(global-set-key (kbd "s-x m") 'mkyle/music)
+#+END_SRC
+
+** Window Manager - EXWM
 "You did it. You're free" - Janet Carr, sarcastically, when I told her I started using emacs as a window
 manager.
 See: [[./window-manager.org][window-manager.org]]
@@ -1242,7 +1456,7 @@ See: [[./window-manager.org][window-manager.org]]
   ;; TODO find test for emacs on root window to put here
   :if window-system
   :after no-littering
-  :commands exwm-init
+  :commands (exwm-init exwm-enable)
   :defer t
   :config
   (require 'window-manager
@@ -1256,7 +1470,6 @@ Add a marker so we know where the file ends.
 #+BEGIN_SRC emacs-lisp :tangle init.el
 ;; init.el ends here
 #+END_SRC
-
 * Tasks
 ** TODO Recompile on save
 
