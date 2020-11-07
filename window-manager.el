@@ -140,9 +140,9 @@
 
 ;; Do stuff
 (exwm-input-set-key (kbd "s-`")        'mkyle/run-sh-async)
-(exwm-input-set-key (kbd "s-!")        'vtermux-execute)
-(exwm-input-set-key (kbd "s-<return>") 'vtermux)
-(add-to-list 'exwm-input-prefix-keys 's-return) ;; vtermux
+(exwm-input-set-key (kbd "s-!")        'vtplex-execute)
+(exwm-input-set-key (kbd "s-<return>") 'vtplex)
+(add-to-list 'exwm-input-prefix-keys 's-return) ;; Needed to capture key
 
 ;; Apps
 (exwm-input-set-key (kbd "s-x i")             'wm/browser)
@@ -177,6 +177,9 @@
   (exwm-input-set-key (kbd "<XF86MonBrightnessUp>")   noop)
   (exwm-input-set-key (kbd "<XF86Sleep>")             noop)
   (exwm-input-set-key (kbd "<XF86WLAN>")              noop))
+
+(setq-default exwm-input-simulation-keys
+              '(([?\C-s] . [?\C-f])))
 
 (provide 'window-manager)
 ;;; window-manager.el ends here

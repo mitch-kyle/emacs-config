@@ -19,23 +19,6 @@
 (setq straight-use-package-by-default t)
 (straight-use-package 'use-package)
 
-(with-eval-after-load "org"
-  (defun mkyle/rebuild-init-file ()
-    "Rebuild init files if they've changed since the last time it was built."
-    (interactive)
-    (org-babel-tangle-file (expand-file-name "readme.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "early-init.el"
-                                         user-emacs-directory))
-    (byte-compile-file (expand-file-name "init.el"
-                                          user-emacs-directory))
-    (org-babel-tangle-file (expand-file-name "window-manager.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "window-manager.el"
-                                         user-emacs-directory))))
-
 (use-package git)
 (when (require 'git nil t)
   (defun org-git-version ()
@@ -69,11 +52,29 @@ Inserted by installing org-mode or when a release is made."
   :config (progn (add-hook 'org-mode-hook 'flyspell-mode)
                  (add-hook 'org-mode-hook 'yas-minor-mode)))
 
+(with-eval-after-load "org"
+  (defun mkyle/rebuild-init-file ()
+    "Rebuild init files if they've changed since the last time it was built."
+    (interactive)
+    (org-babel-tangle-file (expand-file-name "readme.org"
+                                             user-emacs-directory)
+                           "emacs-lisp")
+    (byte-compile-file (expand-file-name "early-init.el"
+                                         user-emacs-directory))
+    (byte-compile-file (expand-file-name "init.el"
+                                          user-emacs-directory))
+    (org-babel-tangle-file (expand-file-name "window-manager.org"
+                                             user-emacs-directory)
+                           "emacs-lisp")
+    (byte-compile-file (expand-file-name "window-manager.el"
+                                         user-emacs-directory))))
+
 (use-package exec-path-from-shell
   :config
   (exec-path-from-shell-initialize))
 
-(use-package no-littering)
+(use-package no-littering
+  :ensure t)
 
 (with-eval-after-load "no-littering"
   (let ((base-custom-file (expand-file-name "custom" no-littering-etc-directory)))
@@ -256,11 +257,11 @@ to open 'filename' and set the cursor on line 'linenumber'."
 (use-package savehist
   :config (savehist-mode 1))
 
-(defvar personal-keybindings (make-sparse-keymap))
 (use-package smex
   :after ido
-  :bind (("M-x" . smex)
-          ("M-X" . smex-major-mode-commands))
+  :bind (:map global-map
+         ("M-x" . smex)
+         ("M-X" . smex-major-mode-commands))
   :config (smex-initialize))
 
 (defun mkyle/split-window (&optional window)
@@ -292,19 +293,31 @@ to open 'filename' and set the cursor on line 'linenumber'."
 
 (global-unset-key (kbd "C-x C-z"))
 
+(setq scroll-margin                   0
+      scroll-conservatively           100000
+      scroll-preserve-screen-position 1)
+
+(global-linum-mode t)
+
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
 (with-eval-after-load "ibuffer"
   (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode))
 
-(with-eval-after-load "ibuffer"
-  (setq ibuffer-formats
-  '((mark modified read-only " "
-     (name 40 40 :left :elide) " " ;; 40 40 is the column width
-     (size 9 -1 :right) " "
-     (mode 8 8 :left :elide) " "
-     filename-and-process)
-    (mark " " (name 16 -1) " " filename))))
+(use-package ibuffer
+  :hook
+  ;; Update list when ibuffer gets focus
+  (ibuffer-mode-hook ibuffer-auto-mode)
+  :commands (ibuffer)
+  :config
+  ;; increase buffer name column width
+  (setq ibuffer-formats '((mark modified read-only " "
+                           ;; 40 40 is the column width
+                           (name 40 40 :left :elide) " "
+                           (size 9 -1 :right) " "
+                           (mode 8 8 :left :elide) " "
+                           filename-and-process)
+                          (mark " " (name 16 -1) " " filename))))
 
 (use-package ibuffer-dynamic-groups
   :after ibuffer
@@ -320,6 +333,8 @@ to open 'filename' and set the cursor on line 'linenumber'."
             '((name . system-group)))
            (ibuffer-dynamic-groups t)))
 
+;; TODO Lookup why this is needed
+(defvar personal-keybindings nil)
 (use-package ido
   :config
   (progn
@@ -352,11 +367,10 @@ to open 'filename' and set the cursor on line 'linenumber'."
   (global-set-key [s-down]  'windmove-down))
 
 (unless window-system
-  (progn
-    (global-set-key (kbd "C-c <left>")  'windmove-left)
-    (global-set-key (kbd "C-c <right>") 'windmove-right)
-    (global-set-key (kbd "C-c <up>")    'windmove-up)
-    (global-set-key (kbd "C-c <down>")  'windmove-down)))
+  (global-set-key (kbd "C-c <left>")  'windmove-left)
+  (global-set-key (kbd "C-c <right>") 'windmove-right)
+  (global-set-key (kbd "C-c <up>")    'windmove-up)
+  (global-set-key (kbd "C-c <down>")  'windmove-down))
 
 (setq-default create-lockfiles nil)
 
@@ -386,13 +400,8 @@ to open 'filename' and set the cursor on line 'linenumber'."
 (cua-mode t)
 
 (use-package rainbow-delimiters
+  :commands (rainbow-delimiters-mode)
   :hook ((prog-mode) . rainbow-delimiters-mode))
-
-(global-linum-mode t)
-
-(setq scroll-margin                   0
-      scroll-conservatively           100000
-      scroll-preserve-screen-position 1)
 
 (setq-default indent-tabs-mode  nil
               tab-width         4
@@ -582,7 +591,8 @@ to open 'filename' and set the cursor on line 'linenumber'."
 
 (use-package magit
   :defer t
-  :bind (("C-x g" . magit-status)))
+  :bind (:map global-map
+         ("C-x g" . magit-status)))
 
 (use-package git-modes
   :defer t)
@@ -615,12 +625,12 @@ to open 'filename' and set the cursor on line 'linenumber'."
                          "*ediff-diff*"
                          "*Ediff Registry*"
                          "*ediff-fine-diff*"))
-
         (set-window-configuration mkyle/ediff-last-windows)
         (condition-case nil
             (let ((buf (get-buffer buf)))
               (when buf (kill-buffer buf)))
           (error nil))))
+
     (add-hook 'ediff-quit-hook 'mkyle/restore-pre-ediff-winconfig)
 
     (setq-default ediff-keep-variants nil)
@@ -704,20 +714,19 @@ to open 'filename' and set the cursor on line 'linenumber'."
      (vterm)))
 
 (global-set-key (kbd "s-!") #'mkyle/vterm-execute)
-(global-set-key (kbd "s-`") #'mkyle/run-sh-async)
 
-(use-package vtermux
-  :straight (vtermux :type   git
-                     :host   github
-                     :repo   "mitch-kyle/vtermux"
-                     :branch "main")
+(use-package vtplex
+  :straight (vtplex :type   git
+                    :host   github
+                    :repo   "mitch-kyle/vtplex"
+                    :branch "main")
   :after vterm
-  :commands (vtermux vtermux-mode)
+  :commands (vtplex vtplex-mode)
   :bind (:map global-map
-         ("s-<return>" . vtermux))
+         ("s-<return>" . vtplex))
   :config
-  (progn (require 'vtermux-spaceline)
-         (vtermux-spaceline-enable)))
+  (progn (require 'vtplex-spaceline)
+         (vtplex-spaceline-enable 'mkyle/projectile)))
 
 (defun mkyle/run-sh-async (&optional command)
   "Interactive prompt to run a shell command in a child process which
@@ -725,6 +734,8 @@ may or may not spawn an x window"
   (interactive (list (read-shell-command "$ ")))
   (when command
     (start-process-shell-command "" nil command)))
+
+(global-set-key (kbd "s-`") #'mkyle/run-sh-async)
 
 (defvar mkyle/labeled-buffers (make-hash-table :weakness 'value))
 

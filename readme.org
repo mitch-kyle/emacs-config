@@ -27,90 +27,38 @@ One of the purposes of this document is to provide information along with the co
 hastily written. I suspect a lot of it does not make sense. Feel free to open issues asking for clarification
 or pointing out typos or nonsense and I'll try to help and improve the document as I go.
 
-* Table Of Contents                                                   :TOC_4:
+* Table Of Contents                                                   :TOC_2:
 - [[#whats-all-this-then][What's All This Then?]]
   - [[#installation][Installation]]
   - [[#questions][Questions?]]
+- [[#early-init][Early Init]]
+  - [[#garbage-collection][Garbage Collection]]
+  - [[#defer-filename-handlers][Defer Filename Handlers]]
+  - [[#maximize-screen-space][Maximize Screen Space]]
+  - [[#disable-modeline][Disable Modeline]]
+  - [[#short-answers][Short Answers]]
+  - [[#silence-redefinition-warnings][Silence Redefinition Warnings]]
+  - [[#early-init-footer][Early Init Footer]]
 - [[#platform][Platform]]
-  - [[#early-init][Early Init]]
-    - [[#garbage-collection][Garbage Collection]]
-    - [[#defer-filename-handlers][Defer Filename Handlers]]
-    - [[#maximize-screen-space][Maximize Screen Space]]
-    - [[#disable-modeline][Disable Modeline]]
-    - [[#short-answers][Short Answers]]
-    - [[#silence-redefinition-warnings][Silence Redefinition Warnings]]
-    - [[#early-init-footer][Early Init Footer]]
-  - [[#file-header][File Header]]
   - [[#package-manager---straightel][Package Manager - straight.el]]
   - [[#package-configuration---use-package][Package Configuration - use-package]]
+  - [[#org-early-load][Org Early Load]]
   - [[#compiling-this-project][Compiling this Project]]
-    - [[#org-early-load][Org Early Load]]
-- [[#look-and-feel][Look And Feel]]
   - [[#executable-path][Executable Path]]
   - [[#manage-config-directory][Manage Config Directory]]
-    - [[#no-litter][No Litter]]
-    - [[#custom][Custom]]
+- [[#look-and-feel][Look And Feel]]
   - [[#theme][Theme]]
-    - [[#theme-hook][Theme Hook]]
-    - [[#settings][Settings]]
   - [[#mode-line][Mode Line]]
-    - [[#hide-minor-modes][Hide Minor Modes]]
-    - [[#search-results][Search Results]]
-    - [[#buffer-information][Buffer Information]]
-    - [[#spaceline][Spaceline]]
   - [[#fonts][Fonts]]
-    - [[#coloured-emojis][Coloured Emojis]]
   - [[#ease-of-use][Ease Of Use]]
-    - [[#remove-startup-clutter][Remove Startup Clutter]]
-    - [[#large-file-warning][Large File Warning]]
-    - [[#disable-blinking-cursor][Disable Blinking Cursor]]
-    - [[#show-keybindings][Show Keybindings]]
-    - [[#open-file-at-point][Open File At Point]]
-    - [[#titles][Titles]]
-      - [[#set-frame-title-format][Set Frame Title Format]]
-      - [[#buffer-titles][Buffer Titles]]
-    - [[#reload-when-files-change][Reload When Files Change]]
-    - [[#save-command-history][Save Command History]]
-    - [[#splitting-windows][Splitting Windows]]
-    - [[#finding-the-cursor][Finding the Cursor]]
-    - [[#remove-suspend-frame-keybinding][Remove suspend-frame keybinding]]
   - [[#navigation][Navigation]]
-    - [[#list-buffers---ibuffer][List Buffers - IBuffer]]
-      - [[#ibuffer-columns][IBuffer Columns]]
-      - [[#ibuffer-filter-groups][IBuffer Filter Groups]]
-    - [[#list-options-when-doing-things---ido][List Options When Doing Things - Ido]]
-    - [[#direct-based-window-navigation---windmove][Direct Based Window Navigation - Windmove]]
   - [[#editing][Editing]]
-    - [[#keep-directories-clean][Keep Directories Clean]]
-    - [[#project-management---projectile][Project Management - Projectile]]
-      - [[#projectile-ibuffer-groups][Projectile IBuffer Groups]]
-    - [[#edit-remote-files---tramp][Edit Remote Files - Tramp]]
-    - [[#sane-basic-editing-keybindings][Sane Basic Editing Keybindings]]
-    - [[#rainbow-delimiters][Rainbow Delimiters]]
-    - [[#line-numbers][Line Numbers]]
-    - [[#scrolling][Scrolling]]
-    - [[#tab-behaviour][Tab Behaviour]]
-    - [[#keep-whitespace-clean][Keep Whitespace Clean]]
-    - [[#selecting-text][Selecting Text]]
-    - [[#autocomplete-dropdown][Autocomplete Dropdown]]
-    - [[#highlighting][Highlighting]]
-      - [[#search-results-1][Search Results]]
-      - [[#matching-delimiters---show-paren][Matching Delimiters - show-paren]]
-      - [[#rainbow-mode][Rainbow Mode]]
-      - [[#matching-symbols][Matching Symbols]]
-    - [[#spell-checking---flyspell][Spell Checking - flyspell]]
-    - [[#code-snippets---yasnippets][Code Snippets - yasnippets]]
   - [[#x-windows][X Windows]]
-    - [[#window-divider][Window Divider]]
-    - [[#transparency][Transparency]]
 - [[#language-specific-packages][Language Specific Packages]]
   - [[#org-mode][Org Mode]]
   - [[#emacs-lisp][Emacs Lisp]]
-    - [[#documentation][Documentation]]
-    - [[#autocompile][Autocompile]]
   - [[#conf-files][Conf Files]]
   - [[#clojure][Clojure]]
-    - [[#cider][Cider]]
   - [[#cmake][CMake]]
   - [[#javascript][JavaScript]]
   - [[#scheme][Scheme]]
@@ -126,27 +74,17 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
   - [[#guix][Guix]]
 - [[#miscellaneous-packages][Miscellaneous Packages]]
   - [[#git][Git]]
-    - [[#magit][Magit]]
-    - [[#git-file-modes][Git file modes]]
-    - [[#mergetool][Mergetool]]
   - [[#restclient][Restclient]]
   - [[#irc][IRC]]
   - [[#persistent-scratch][Persistent Scratch]]
   - [[#terminal][Terminal]]
-    - [[#vtermux][vtermux]]
   - [[#external-applications][External Applications]]
-    - [[#persistent-buffers][Persistent Buffers]]
-    - [[#volume][Volume]]
-    - [[#music][Music]]
   - [[#window-manager---exwm][Window Manager - EXWM]]
 - [[#footer][Footer]]
 - [[#tasks][Tasks]]
   - [[#recompile-on-save][Recompile on save]]
 
-* Platform
-Things that inform the rest of the configuration.
-
-** Early Init
+* Early Init
 Things we want to do before configuring package management
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
 ;;; init.el --- emacs early initialization -*- lexical-binding: t; -*-
@@ -155,7 +93,7 @@ Things we want to do before configuring package management
 ;;; Code:
 #+END_SRC
 
-*** Garbage Collection
+** Garbage Collection
 Wait until after startup to garbage collect as per, [How does Doom start so quickly?](https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#how-does-doom-start-up-so-quickly)
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
 (setq gc-cons-threshold  most-positive-fixnum ; 2^61 bytes
@@ -170,7 +108,7 @@ Once startup is finished, reset gc threshold to something sensible to prevent fr
           gc-cons-percentage 0.1)))
 #+END_SRC
 
-*** Defer Filename Handlers
+** Defer Filename Handlers
 Prevent looking up file name handlers until after startup
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
 (let ((saved-file-name-handler-alist file-name-handler-alist))
@@ -180,7 +118,7 @@ Prevent looking up file name handlers until after startup
       (setq file-name-handler-alist (append saved-file-name-handler-alist file-name-handler-alist)))))
 #+END_SRC
 
-*** Maximize Screen Space
+** Maximize Screen Space
 Remove the different bars taking up valuable working space. Remove these in early init to prevent them being drawn.
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
 (menu-bar-mode -1)
@@ -188,13 +126,13 @@ Remove the different bars taking up valuable working space. Remove these in earl
 (scroll-bar-mode -1)
 #+END_SRC
 
-*** Disable Modeline
+** Disable Modeline
 Disable modeline until we apply our sugar later
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
 (setq mode-line-format nil)
 #+END_SRC
 
-*** Short Answers
+** Short Answers
 Use 'y' or 'n' rather than 'yes' or 'no'. This should improve productivity when answering binary questions by up
 to 60% according to Homer Simpson.
 
@@ -202,21 +140,22 @@ to 60% according to Homer Simpson.
 (defalias 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
-*** Silence Redefinition Warnings
+** Silence Redefinition Warnings
 Prevent warnings when advice is added to functions.
 [[https://andrewjamesjohnson.com/suppressing-ad-handle-definition-warnings-in-emacs/][More Information]]
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
 (setq ad-redefinition-action 'accept)
 #+END_SRC
 
-*** Early Init Footer
+** Early Init Footer
 #+BEGIN_SRC emacs-lisp :tangle early-init.el
 ;; early-init.el ends here
 #+END_SRC
 
-** File Header
-Things we want to happen immediately before loading package management and use-package
-Add an emacs lisp header to the generated file with an explanation that it is a generated file
+* Platform
+The init file begins here. first setup package management and define config file compilation.
+
+First, add an emacs lisp header to the generated file with an explanation that it is a generated file
 #+BEGIN_SRC emacs-lisp :tangle init.el
 ;;; init.el --- emacs initialization -*- lexical-binding: t; -*-
 ;;; Commentary:
@@ -249,28 +188,7 @@ it doesn't prevent the rest of your configuration from loading. Set it to use st
 (straight-use-package 'use-package)
 #+END_SRC
 
-** Compiling this Project
-A function to rebuild this project if it's changed since the last time it was built.
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(with-eval-after-load "org"
-  (defun mkyle/rebuild-init-file ()
-    "Rebuild init files if they've changed since the last time it was built."
-    (interactive)
-    (org-babel-tangle-file (expand-file-name "readme.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "early-init.el"
-                                         user-emacs-directory))
-    (byte-compile-file (expand-file-name "init.el"
-                                          user-emacs-directory))
-    (org-babel-tangle-file (expand-file-name "window-manager.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "window-manager.el"
-                                         user-emacs-directory))))
-#+END_SRC
-
-*** Org Early Load
+** Org Early Load
 Because straight.el can't properly compile org yet, we need to define the org-version function
 ourselves to prevent the old builtin org from being loaded instead.
 
@@ -306,7 +224,27 @@ Inserted by installing org-mode or when a release is made."
 <<load-org>>
 #+END_SRC
 
-* Look And Feel
+** Compiling this Project
+A function to rebuild this project if it's changed since the last time it was built.
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(with-eval-after-load "org"
+  (defun mkyle/rebuild-init-file ()
+    "Rebuild init files if they've changed since the last time it was built."
+    (interactive)
+    (org-babel-tangle-file (expand-file-name "readme.org"
+                                             user-emacs-directory)
+                           "emacs-lisp")
+    (byte-compile-file (expand-file-name "early-init.el"
+                                         user-emacs-directory))
+    (byte-compile-file (expand-file-name "init.el"
+                                          user-emacs-directory))
+    (org-babel-tangle-file (expand-file-name "window-manager.org"
+                                             user-emacs-directory)
+                           "emacs-lisp")
+    (byte-compile-file (expand-file-name "window-manager.el"
+                                         user-emacs-directory))))
+#+END_SRC
+
 ** Executable Path
 Set the path to the environment variable PATH always
 #+BEGIN_SRC emacs-lisp :tangle init.el
@@ -321,7 +259,8 @@ Set the path to the environment variable PATH always
  in the emacs user directory; no-littering puts most of these files in =~/.emacs.d/var= and =~/.emacs.d/etc=
  respectively.
  #+BEGIN_SRC emacs-lisp :tangle init.el
- (use-package no-littering)
+(use-package no-littering
+  :ensure t)
  #+END_SRC
 
 *** Custom
@@ -339,6 +278,8 @@ Compile custom file when it changes.
   "Recompile custom files after saving to it"
   (byte-compile-file custom-file))
  #+END_SRC
+
+* Look And Feel
 
 ** Theme
 *** Theme Hook
@@ -612,11 +553,11 @@ Remember most recently run commands and text searches
 (use-package savehist
   :config (savehist-mode 1))
 
-(defvar personal-keybindings (make-sparse-keymap))
 (use-package smex
   :after ido
-  :bind (("M-x" . smex)
-          ("M-X" . smex-major-mode-commands))
+  :bind (:map global-map
+         ("M-x" . smex)
+         ("M-X" . smex-major-mode-commands))
   :config (smex-initialize))
 #+END_SRC
 
@@ -660,6 +601,19 @@ This keybinding makes sense for a terminal editor but occasionally I hit it by a
 (global-unset-key (kbd "C-x C-z"))
 #+END_SRC
 
+*** Scrolling
+Maintain cursor position when scrolling
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(setq scroll-margin                   0
+      scroll-conservatively           100000
+      scroll-preserve-screen-position 1)
+#+END_SRC
+*** Line Numbers
+Always show line numbers
+#+BEGIN_SRC emacs-lisp :tangle init.el
+(global-linum-mode t)
+#+END_SRC
+
 ** Navigation
 *** List Buffers - IBuffer
 List buffers with C-x C-b. The default emacs buffer list leaves much to be desired; IBuffer is a good alternative.
@@ -667,23 +621,24 @@ List buffers with C-x C-b. The default emacs buffer list leaves much to be desir
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 #+END_SRC
 
-Update list when ibuffer gets focus
 #+BEGIN_SRC emacs-lisp :tangle init.el
 (with-eval-after-load "ibuffer"
   (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode))
-#+END_SRC
 
-**** IBuffer Columns
-Setup the buffer list columns to show more of the name
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(with-eval-after-load "ibuffer"
-  (setq ibuffer-formats
-  '((mark modified read-only " "
-     (name 40 40 :left :elide) " " ;; 40 40 is the column width
-     (size 9 -1 :right) " "
-     (mode 8 8 :left :elide) " "
-     filename-and-process)
-    (mark " " (name 16 -1) " " filename))))
+(use-package ibuffer
+  :hook
+  ;; Update list when ibuffer gets focus
+  (ibuffer-mode-hook ibuffer-auto-mode)
+  :commands (ibuffer)
+  :config
+  ;; increase buffer name column width
+  (setq ibuffer-formats '((mark modified read-only " "
+                           ;; 40 40 is the column width
+                           (name 40 40 :left :elide) " "
+                           (size 9 -1 :right) " "
+                           (mode 8 8 :left :elide) " "
+                           filename-and-process)
+                          (mark " " (name 16 -1) " " filename))))
 #+END_SRC
 
 **** IBuffer Filter Groups
@@ -710,6 +665,8 @@ Better interactive mini-buffer menus. highly recommend
 See [[http://ergoemacs.org/emacs/emacs_ido_mode.html][ergomacs ido tutorial]]
 
 #+BEGIN_SRC emacs-lisp :tangle init.el
+;; TODO Lookup why this is needed
+(defvar personal-keybindings nil)
 (use-package ido
   :config
   (progn
@@ -746,11 +703,10 @@ Switch windows in the direct of the arrow keys. (s-<arrow>). (C-c <arrow>) in th
   (global-set-key [s-down]  'windmove-down))
 
 (unless window-system
-  (progn
-    (global-set-key (kbd "C-c <left>")  'windmove-left)
-    (global-set-key (kbd "C-c <right>") 'windmove-right)
-    (global-set-key (kbd "C-c <up>")    'windmove-up)
-    (global-set-key (kbd "C-c <down>")  'windmove-down)))
+  (global-set-key (kbd "C-c <left>")  'windmove-left)
+  (global-set-key (kbd "C-c <right>") 'windmove-right)
+  (global-set-key (kbd "C-c <up>")    'windmove-up)
+  (global-set-key (kbd "C-c <down>")  'windmove-down))
 #+END_SRC
 
 ** Editing
@@ -822,21 +778,8 @@ Give nested delimiters (=()[]{}<>=) different colours. It is more valuable than 
 
 #+BEGIN_SRC emacs-lisp :tangle init.el
 (use-package rainbow-delimiters
+  :commands (rainbow-delimiters-mode)
   :hook ((prog-mode) . rainbow-delimiters-mode))
-#+END_SRC
-
-*** Line Numbers
-Always show line numbers
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(global-linum-mode t)
-#+END_SRC
-
-*** Scrolling
-Maintain cursor position when scrolling
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(setq scroll-margin                   0
-      scroll-conservatively           100000
-      scroll-preserve-screen-position 1)
 #+END_SRC
 
 *** Tab Behaviour
@@ -1188,7 +1131,8 @@ Magit is nice front-end to git. C-c m to open magit-status popup
 #+BEGIN_SRC emacs-lisp :tangle init.el
 (use-package magit
   :defer t
-  :bind (("C-x g" . magit-status)))
+  :bind (:map global-map
+         ("C-x g" . magit-status)))
 #+END_SRC
 
 *** Git file modes
@@ -1237,12 +1181,12 @@ Cleanup ediff buffers and restore window configuration when finished.
                          "*ediff-diff*"
                          "*Ediff Registry*"
                          "*ediff-fine-diff*"))
-
         (set-window-configuration mkyle/ediff-last-windows)
         (condition-case nil
             (let ((buf (get-buffer buf)))
               (when buf (kill-buffer buf)))
           (error nil))))
+
     (add-hook 'ediff-quit-hook 'mkyle/restore-pre-ediff-winconfig)
 
     (setq-default ediff-keep-variants nil)
@@ -1345,23 +1289,23 @@ vterm is an integrated terminal emulator using modules.
      (vterm)))
 
 (global-set-key (kbd "s-!") #'mkyle/vterm-execute)
-(global-set-key (kbd "s-`") #'mkyle/run-sh-async)
 #+END_SRC
 
-*** vtermux
+*** vtplex
+Terminal multiplexer for vterm. It uses similar keybindings to gnu screen.
 #+begin_src emacs-lisp :tangle init.el
-(use-package vtermux
-  :straight (vtermux :type   git
-                     :host   github
-                     :repo   "mitch-kyle/vtermux"
-                     :branch "main")
+(use-package vtplex
+  :straight (vtplex :type   git
+                    :host   github
+                    :repo   "mitch-kyle/vtplex"
+                    :branch "main")
   :after vterm
-  :commands (vtermux vtermux-mode)
+  :commands (vtplex vtplex-mode)
   :bind (:map global-map
-         ("s-<return>" . vtermux))
+         ("s-<return>" . vtplex))
   :config
-  (progn (require 'vtermux-spaceline)
-         (vtermux-spaceline-enable)))
+  (progn (require 'vtplex-spaceline)
+         (vtplex-spaceline-enable 'mkyle/projectile)))
 #+end_src
 
 ** External Applications
@@ -1372,6 +1316,8 @@ may or may not spawn an x window"
   (interactive (list (read-shell-command "$ ")))
   (when command
     (start-process-shell-command "" nil command)))
+
+(global-set-key (kbd "s-`") #'mkyle/run-sh-async)
 #+END_SRC
 
 *** Persistent Buffers
@@ -1470,6 +1416,7 @@ Add a marker so we know where the file ends.
 #+BEGIN_SRC emacs-lisp :tangle init.el
 ;; init.el ends here
 #+END_SRC
+
 * Tasks
 ** TODO Recompile on save
 

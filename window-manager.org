@@ -32,6 +32,7 @@ C-u M-x org-babel-load-file RET path/to/window-manager.org
   - [[#taking-screenshots][Taking Screenshots]]
   - [[#screen-lock][Screen Lock]]
 - [[#keybindings][Keybindings]]
+  - [[#simulation-keys][Simulation Keys]]
 - [[#footer][Footer]]
 
 * Header
@@ -242,9 +243,9 @@ For browsin...
 
 ;; Do stuff
 (exwm-input-set-key (kbd "s-`")        'mkyle/run-sh-async)
-(exwm-input-set-key (kbd "s-!")        'vtermux-execute)
-(exwm-input-set-key (kbd "s-<return>") 'vtermux)
-(add-to-list 'exwm-input-prefix-keys 's-return) ;; vtermux
+(exwm-input-set-key (kbd "s-!")        'vtplex-execute)
+(exwm-input-set-key (kbd "s-<return>") 'vtplex)
+(add-to-list 'exwm-input-prefix-keys 's-return) ;; Needed to capture key
 
 ;; Apps
 (exwm-input-set-key (kbd "s-x i")             'wm/browser)
@@ -279,7 +280,13 @@ For browsin...
   (exwm-input-set-key (kbd "<XF86MonBrightnessUp>")   noop)
   (exwm-input-set-key (kbd "<XF86Sleep>")             noop)
   (exwm-input-set-key (kbd "<XF86WLAN>")              noop))
+#+END_SRC
 
+** Simulation Keys
+In exwm buffers we want to map some common keybindings to their emacs equivalent
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
+(setq-default exwm-input-simulation-keys
+              '(([?\C-s] . [?\C-f])))
 #+END_SRC
 
 * Footer
