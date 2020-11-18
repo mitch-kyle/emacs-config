@@ -171,8 +171,7 @@ Show the date and time
 Show the battery level and charging status.
 #+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (use-package fancy-battery
-  :hook ((exwm-init-hook) . fancy-batter-mode))
-
+  :hook ((exwm-init-hook) . fancy-battery-mode))
 #+END_SRC
 
 ** IBuffer Group
@@ -289,3 +288,7 @@ In exwm buffers we want to map some common keybindings to their emacs equivalent
 (provide 'window-manager)
 ;;; window-manager.el ends here
 #+END_SRC
+
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda () (dolist (file (org-babel-tangle-file (buffer-file-name) nil "emacs-lisp")) (byte-compile-file file))) 1 t)
+# End:

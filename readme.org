@@ -1,6 +1,7 @@
 #+TITLE: Mitch Kyle's Emacs 26 Configuration
 #+AUTHOR: Mitch Kyle
 #+EMAIL: mitch.tux@gmail.com
+#+STARTUP: overview
 
 * What's All This Then?
 This is a configuration file for Emacs.
@@ -43,7 +44,6 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
   - [[#package-manager---straightel][Package Manager - straight.el]]
   - [[#package-configuration---use-package][Package Configuration - use-package]]
   - [[#org-early-load][Org Early Load]]
-  - [[#compiling-this-project][Compiling this Project]]
   - [[#executable-path][Executable Path]]
   - [[#manage-config-directory][Manage Config Directory]]
 - [[#look-and-feel][Look And Feel]]
@@ -82,8 +82,7 @@ or pointing out typos or nonsense and I'll try to help and improve the document 
   - [[#window-manager---exwm][Window Manager - EXWM]]
 - [[#user-script-directory][User Script Directory]]
 - [[#footer][Footer]]
-- [[#tasks][Tasks]]
-  - [[#recompile-on-save][Recompile on save]]
+- [[#compile-on-save][Compile on save]]
 
 * Early Init
 Things we want to do before configuring package management
@@ -194,60 +193,9 @@ it doesn't prevent the rest of your configuration from loading. Set it to use st
 #+END_SRC
 
 ** Org Early Load
-Because straight.el can't properly compile org yet, we need to define the org-version function
-ourselves to prevent the old builtin org from being loaded instead.
-
+Load org before other packages to prevent loading the built-in org package.
 #+BEGIN_SRC emacs-lisp :tangle init.el :noweb yes
-(use-package git)
-(when (require 'git nil t)
-  (defun org-git-version ()
-    "The Git version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (git-run "describe"
-                "--match=release\*"
-                "--abbrev=6"
-                "HEAD"))))
-
-  (defun org-release ()
-    "The release version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (string-remove-prefix
-        "release_"
-        (git-run "describe"
-                 "--match=release\*"
-                 "--abbrev=0"
-                 "HEAD")))))
-
-  (provide 'org-version))
-
 <<load-org>>
-#+END_SRC
-
-** Compiling this Project
-A function to rebuild this project if it's changed since the last time it was built.
-#+BEGIN_SRC emacs-lisp :tangle init.el
-(with-eval-after-load 'org
-  (defun mkyle/rebuild-init-file ()
-    "Rebuild init files if they've changed since the last time it was built."
-    (interactive)
-    (org-babel-tangle-file (expand-file-name "readme.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "early-init.el"
-                                         user-emacs-directory))
-    (byte-compile-file (expand-file-name "init.el"
-                                         user-emacs-directory))
-    (org-babel-tangle-file (expand-file-name "window-manager.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "window-manager.el"
-                                         user-emacs-directory))))
 #+END_SRC
 
 ** Executable Path
@@ -598,6 +546,7 @@ Show the cursor when moving after big movements in the window
   :diminish beacon-mode
   :config (beacon-mode +1))
 #+END_SRC
+
 *** Remove suspend-frame keybinding
 This keybinding makes sense for a terminal editor but occasionally I hit it by accident while using exwm and it just destroys one's train of thought.
 #+BEGIN_SRC emacs-lisp :tangle init.el
@@ -611,6 +560,7 @@ Maintain cursor position when scrolling
       scroll-conservatively           100000
       scroll-preserve-screen-position 1)
 #+END_SRC
+
 *** Line Numbers
 Always show line numbers
 #+BEGIN_SRC emacs-lisp :tangle init.el
@@ -676,7 +626,6 @@ Better minibuffer interactive completion
                     :files (:defaults (:exclude "ivy-hydra.el")))
   :ensure t
   :after smex
-  :diminish (counsel-mode ivy-mode)
   :init (setq ivy-use-virtual-buffers       nil
               enable-recursive-minibuffers  t
               ;; Enable fuzzy matching except in swiper
@@ -711,6 +660,8 @@ Better minibuffer interactive completion
           (lambda ()
             (counsel-mode +1)
             (ivy-mode +1)
+            (diminish 'counsel-mode)
+            (diminish 'ivy-mode)
             (ido-mode -1)))
 #+END_SRC
 
@@ -935,35 +886,36 @@ I like the "glass editing window" effect. This sets it that way by default and g
 
 * Language Specific Packages
 Packages related to editing different file formats
-
 ** Org Mode
 Org mode is used to build this document.
 #+NAME: load-org
 #+BEGIN_SRC emacs-lisp :tangle no
-  (use-package org-plus-contrib
-    :mode ("\\.org\\'" . org-mode)
-    :init (progn (setq org-directory                    "~/org"
-                       org-adapt-indentation            nil
-                       org-edit-src-content-indentation 0)
-                 (mkdir org-directory t))
-    :config
-    (progn
-      (require 'org-eldoc)
-      (org-eldoc-load)
-      (advice-add 'org-eldoc-documentation-function :before-until
-                  (lambda (&rest _)
-                    (when-let (link
-                               (org-element-property :raw-link
-                                                     (org-element-context)))
-                      (format "Link: %s" link)))
-                  '((name  . mkyle/show-link-in-minibuffer)
-                    (depth . 100)))
-      (add-hook 'org-mode-hook 'flyspell-mode)
-      (add-hook 'org-mode-hook 'yas-minor-mode)))
+(use-package org-plus-contrib
+  :mode ("\\.org\\'" . org-mode)
+  :init (progn (setq org-directory                    "~/org"
+                     org-adapt-indentation            nil
+                     org-edit-src-content-indentation 0)
+               (mkdir org-directory t))
+  :config
+  (progn
+    (require 'org-eldoc)
+    (org-eldoc-load)
+    (advice-add 'org-eldoc-documentation-function :before-until
+                (lambda (&rest _)
+                  (when-let (link
+                             (org-element-property :raw-link
+                                                   (org-element-context)))
+                    (concat "Link: "
+                            (propertize link
+                                        'face 'org-link))))
+                '((name  . mkyle/show-link-in-minibuffer)
+                  (depth . 100)))
+    (add-hook 'org-mode-hook 'flyspell-mode)
+    (add-hook 'org-mode-hook 'yas-minor-mode)))
 
-  (use-package toc-org
-    :after org
-    :hook ((org-mode) . toc-org-mode))
+(use-package toc-org
+  :after org
+  :hook ((org-mode) . toc-org-mode))
 #+END_SRC
 
 ** Emacs Lisp
@@ -1480,7 +1432,10 @@ Add a marker so we know where the file ends.
 ;; init.el ends here
 #+END_SRC
 
-* Tasks
-** TODO Recompile on save
+* Compile on save
+This file uses emacs file local variables to rebuild it's outputs on save.
 
 # readme.org ends here
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda () (dolist (file (org-babel-tangle-file (buffer-file-name) nil "emacs-lisp")) (byte-compile-file file))) 1 t)
+# End:

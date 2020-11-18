@@ -16,7 +16,16 @@
  '(rustic-ansi-faces
    ["#0c0a20" "#e61f44" "#a7da1e" "#ffd400" "#1ea8fc" "#ff2afc" "#42c6ff" "#f2f3f7"])
  '(safe-local-variable-values
-   '((eval modify-syntax-entry 43 "'")
+   '((eval add-hook 'after-save-hook
+           (lambda nil
+             (dolist
+                 (file
+                  (org-babel-tangle-file
+                   (buffer-file-name)
+                   nil "emacs-lisp"))
+               (byte-compile-file file)))
+           1 t)
+     (eval modify-syntax-entry 43 "'")
      (eval modify-syntax-entry 36 "'")
      (eval modify-syntax-entry 126 "'"))))
 (custom-set-faces

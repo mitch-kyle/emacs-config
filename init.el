@@ -21,34 +21,6 @@
 (straight-use-package 'use-package)
 (require 'bind-key)
 
-(use-package git)
-(when (require 'git nil t)
-  (defun org-git-version ()
-    "The Git version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (git-run "describe"
-                "--match=release\*"
-                "--abbrev=6"
-                "HEAD"))))
-
-  (defun org-release ()
-    "The release version of org-mode.
-Inserted by installing org-mode or when a release is made."
-    (let ((git-repo (expand-file-name "straight/repos/org/"
-                                      user-emacs-directory)))
-      (string-trim
-       (string-remove-prefix
-        "release_"
-        (git-run "describe"
-                 "--match=release\*"
-                 "--abbrev=0"
-                 "HEAD")))))
-
-  (provide 'org-version))
-
 (use-package org-plus-contrib
   :mode ("\\.org\\'" . org-mode)
   :init (progn (setq org-directory                    "~/org"
@@ -64,7 +36,9 @@ Inserted by installing org-mode or when a release is made."
                   (when-let (link
                              (org-element-property :raw-link
                                                    (org-element-context)))
-                    (format "Link: %s" link)))
+                    (concat "Link: "
+                            (propertize link
+                                        'face 'org-link))))
                 '((name  . mkyle/show-link-in-minibuffer)
                   (depth . 100)))
     (add-hook 'org-mode-hook 'flyspell-mode)
@@ -73,23 +47,6 @@ Inserted by installing org-mode or when a release is made."
 (use-package toc-org
   :after org
   :hook ((org-mode) . toc-org-mode))
-
-(with-eval-after-load 'org
-  (defun mkyle/rebuild-init-file ()
-    "Rebuild init files if they've changed since the last time it was built."
-    (interactive)
-    (org-babel-tangle-file (expand-file-name "readme.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "early-init.el"
-                                         user-emacs-directory))
-    (byte-compile-file (expand-file-name "init.el"
-                                         user-emacs-directory))
-    (org-babel-tangle-file (expand-file-name "window-manager.org"
-                                             user-emacs-directory)
-                           "emacs-lisp")
-    (byte-compile-file (expand-file-name "window-manager.el"
-                                         user-emacs-directory))))
 
 (use-package exec-path-from-shell
   :custom
@@ -362,7 +319,6 @@ to open 'filename' and set the cursor on line 'linenumber'."
                     :files (:defaults (:exclude "ivy-hydra.el")))
   :ensure t
   :after smex
-  :diminish (counsel-mode ivy-mode)
   :init (setq ivy-use-virtual-buffers       nil
               enable-recursive-minibuffers  t
               ;; Enable fuzzy matching except in swiper
@@ -397,6 +353,8 @@ to open 'filename' and set the cursor on line 'linenumber'."
           (lambda ()
             (counsel-mode +1)
             (ivy-mode +1)
+            (diminish 'counsel-mode)
+            (diminish 'ivy-mode)
             (ido-mode -1)))
 
 (windmove-default-keybindings)

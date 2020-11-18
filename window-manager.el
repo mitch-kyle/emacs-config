@@ -16,24 +16,21 @@
 
 (require 'exwm-randr)
 (defun wm/xrandr-update-outputs ()
-  (let* ((monitors   (let ((reg "^\\([^ ]*?\\) connected")
-                           (str (shell-command-to-string "xrandr"))
-                           (pos 0)
-                           (res))
-                       (while (setq pos (string-match reg str (1+ pos)))
-                         (push (match-string 1 str) res))
-                       (nreverse res)))
-         (n-monitors (length monitors)))
-    (let ((i 0)
-          (result))
-      (dolist (m monitors result)
-        (setq result (cons m
-                           (cons i
-                                 result)))
-        (setq i (1+ i)))
-      (setq exwm-randr-workspace-monitor-plist (reverse result)))
-    (while (> n-monitors (exwm-workspace--count))
-      (exwm-workspace-add))))
+  (let ((monitors   (let ((reg "^\\([^ ]*?\\) connected")
+                          (str (shell-command-to-string "xrandr"))
+                          (pos 0)
+                          (res))
+                      (while (setq pos (string-match reg str (1+ pos)))
+                        (push (match-string 1 str) res))
+                      (nreverse res)))
+        (i 0)
+        (result))
+    (dolist (m monitors result)
+      (setq result (plist-put result m i)
+            i      (1+ i)))
+    (while (> i (exwm-workspace--count))
+      (exwm-workspace-add))
+    (setq exwm-randr-workspace-monitor-plist (nreverse result))))
 
 (defun wm/xrandr-init ()
   (add-hook 'exwm-randr-screen-change-hook 'wm/xrandr-update-outputs)
@@ -91,10 +88,9 @@
 (display-time-mode t)
 
 (use-package fancy-battery
-  :commands fancy-battery-mode
-  :config (fancy-battery-mode t))
+  :hook ((exwm-init-hook) . fancy-battery-mode))
 
-(with-eval-after-load "ibuffer-dynamic-groups"
+(with-eval-after-load 'ibuffer-dynamic-groups
   (ibuffer-dynamic-groups-add (lambda (groups)
                                 (append '(("X Windows" (mode . exwm-mode)))
                                         groups))
@@ -177,7 +173,7 @@
   (exwm-input-set-key (kbd "<XF86WLAN>")              noop))
 
 (setq-default exwm-input-simulation-keys
-              '(([?\C-s] . [?\C-f])))
+              '(([?\C-s]       . [?\C-f])))
 
 (exwm-enable)
 (provide 'window-manager)
