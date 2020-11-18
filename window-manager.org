@@ -47,48 +47,39 @@ Enable lexical binding and print generated file disclaimer
 * Guts
 ** Initial Configuration
 This loads up all the builtin configuration in the library.
-Use the ido flavour if ido is available.
 #+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (require 'exwm)
 (require 'exwm-config)
 (require 'server)
 
-(if (require 'ido nil t)
-    (progn (exwm-input-set-key (kbd "s-x b") #'ido-switch-buffer)
-           (exwm-config-ido))
-  (exwm-config-default))
+(exwm-config-example)
+(exwm-enable)
+
 
 (unless (server-running-p)
   (server-start))
-
-(exwm-enable)
 #+END_SRC
 
 ** Multiple Monitors
- Automatically create new workspaces when monitors are added or removed.
- #+BEGIN_SRC emacs-lisp :tangle window-manager.el
+Automatically create new workspaces when monitors are added or removed.
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (require 'exwm-randr)
 (defun wm/xrandr-update-outputs ()
-  (let* ((monitors   (let ((reg "^\\([^ ]*?\\) connected")
-                           (str (shell-command-to-string "xrandr"))
-                           (pos 0)
-                           (res))
-                       (while (setq pos (string-match reg str (1+ pos)))
-                         (push (match-string 1 str) res))
-                       (nreverse res)))
-         (n-monitors (length monitors)))
-    (let ((i 0)
-          (result))
-      (dolist (m monitors result)
-        (setq result (cons m
-                           (cons i
-                                 result)))
-        (setq i (1+ i)))
-      (setq exwm-randr-workspace-monitor-plist (reverse result)))
-    (while (> n-monitors (exwm-workspace--count))
+  (let ((monitors   (let ((reg "^\\([^ ]*?\\) connected")
+                          (str (shell-command-to-string "xrandr"))
+                          (pos 0)
+                          (res))
+                      (while (setq pos (string-match reg str (1+ pos)))
+                        (push (match-string 1 str) res))
+                      (nreverse res)))
+        (i 0)
+        (result))
+    (dolist (m monitors result)
+      (setq result (plist-put result m i)
+            i      (1+ i)))
+    (while (> i (exwm-workspace--count))
       (exwm-workspace-add))
-    (while (< n-monitors (exwm-workspace--count))
-      (exwm-workspace-delete (- (exwm-workspace--count) 1)))))
+    (setq exwm-randr-workspace-monitor-plist (nreverse result))))
 
 (defun wm/xrandr-init ()
   (add-hook 'exwm-randr-screen-change-hook 'wm/xrandr-update-outputs)
@@ -118,7 +109,7 @@ In theory, in practice we need to do some monkeying to get it working.
     (defun mkyle/windmove-framemove-hook (f dir &optional arg window)
       "Hook windmove to framemove properly"
       (condition-case nil
-        (funcall f dir arg window)
+          (funcall f dir arg window)
         ('error (fm-next-frame dir))))
 
     (advice-add 'windmove-do-window-select
@@ -149,10 +140,10 @@ title. Don't ask me why this isn't the default behaviour.
 (defun wm/rename-buffer ()
   (interactive)
   (exwm-workspace-rename-buffer
-    (concat exwm-class-name ": "
-            (if (<= (length exwm-title) 50)
-                exwm-title
-              (concat (substring exwm-title 0 49) "...")))))
+   (concat exwm-class-name ": "
+           (if (<= (length exwm-title) 50)
+               exwm-title
+             (concat (substring exwm-title 0 49) "...")))))
 
 (add-hook 'exwm-update-class-hook 'wm/rename-buffer)
 (add-hook 'exwm-update-title-hook 'wm/rename-buffer)
@@ -180,15 +171,15 @@ Show the date and time
 Show the battery level and charging status.
 #+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (use-package fancy-battery
-  :commands fancy-battery-mode
-  :config (fancy-battery-mode t))
+  :hook ((exwm-init-hook) . fancy-batter-mode))
+
 #+END_SRC
 
 ** IBuffer Group
 It's nice to have all the xwindows in their own ibuffer group so you aren't
- hunting for them.
+hunting for them.
 #+BEGIN_SRC emacs-lisp :tangle window-manager.el
-(with-eval-after-load "ibuffer-dynamic-groups"
+(with-eval-after-load 'ibuffer-dynamic-groups
   (ibuffer-dynamic-groups-add (lambda (groups)
                                 (append '(("X Windows" (mode . exwm-mode)))
                                         groups))
@@ -199,20 +190,23 @@ It's nice to have all the xwindows in their own ibuffer group so you aren't
 * Applications
 ** Browser
 For browsin...
- #+BEGIN_SRC emacs-lisp :tangle window-manager.el
+#+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (require 'seq)
 
 (defun wm/browser ()
+  "Run, raise, or bury browser window"
   (interactive)
-  (let ((buf (seq-find (lambda (buffer)
-                         (with-current-buffer buffer
-                           (and (eq major-mode 'exwm-mode)
-                                (string= exwm-class-name "firefox")
-                                buffer)))
-                       (buffer-list))))
-    (if (and buf (buffer-live-p buf))
-        (switch-to-buffer buf)
-      (start-process-shell-command "" nil "firefox"))))
+  (if-let (buf (seq-find (lambda (buffer)
+                           (with-current-buffer buffer
+                             (and (eq major-mode 'exwm-mode)
+                                  (string= exwm-class-name "firefox")
+                                  (buffer-live-p buffer)
+                                  buffer)))
+                         (buffer-list)))
+      (if (equal buf (current-buffer))
+          (bury-buffer)
+        (switch-to-buffer buf))
+    (start-process-shell-command "firefox" nil "firefox")))
 #+END_SRC
 
 ** Taking Screenshots
@@ -220,7 +214,7 @@ For browsin...
 (defun wm/scrot ()
   (interactive)
   (start-process-shell-command "" nil
-   "scrot --select --exec 'mv $f ~/Pictures/screenshots'"))
+                               "scrot --select --exec 'mv $f ~/Pictures/screenshots'"))
 #+END_SRC
 
 ** Screen Lock
@@ -286,11 +280,12 @@ For browsin...
 In exwm buffers we want to map some common keybindings to their emacs equivalent
 #+BEGIN_SRC emacs-lisp :tangle window-manager.el
 (setq-default exwm-input-simulation-keys
-              '(([?\C-s] . [?\C-f])))
+              '(([?\C-s]       . [?\C-f])))
 #+END_SRC
 
 * Footer
 #+BEGIN_SRC emacs-lisp :tangle window-manager.el
+(exwm-enable)
 (provide 'window-manager)
 ;;; window-manager.el ends here
 #+END_SRC

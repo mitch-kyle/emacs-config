@@ -4,20 +4,22 @@
 ;;; Code:
 
 (defvar bootstrap-version)
+(defvar straight-repository-branch "develop")
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
-      (url-retrieve-synchronously
-       "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-       'silent 'inhibit-cookies)
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
 (setq straight-use-package-by-default t)
 (straight-use-package 'use-package)
+(require 'bind-key)
 
 (use-package git)
 (when (require 'git nil t)
@@ -47,12 +49,32 @@ Inserted by installing org-mode or when a release is made."
 
   (provide 'org-version))
 
-(use-package org
+(use-package org-plus-contrib
   :mode ("\\.org\\'" . org-mode)
-  :config (progn (add-hook 'org-mode-hook 'flyspell-mode)
-                 (add-hook 'org-mode-hook 'yas-minor-mode)))
+  :init (progn (setq org-directory                    "~/org"
+                     org-adapt-indentation            nil
+                     org-edit-src-content-indentation 0)
+               (mkdir org-directory t))
+  :config
+  (progn
+    (require 'org-eldoc)
+    (org-eldoc-load)
+    (advice-add 'org-eldoc-documentation-function :before-until
+                (lambda (&rest _)
+                  (when-let (link
+                             (org-element-property :raw-link
+                                                   (org-element-context)))
+                    (format "Link: %s" link)))
+                '((name  . mkyle/show-link-in-minibuffer)
+                  (depth . 100)))
+    (add-hook 'org-mode-hook 'flyspell-mode)
+    (add-hook 'org-mode-hook 'yas-minor-mode)))
 
-(with-eval-after-load "org"
+(use-package toc-org
+  :after org
+  :hook ((org-mode) . toc-org-mode))
+
+(with-eval-after-load 'org
   (defun mkyle/rebuild-init-file ()
     "Rebuild init files if they've changed since the last time it was built."
     (interactive)
@@ -62,7 +84,7 @@ Inserted by installing org-mode or when a release is made."
     (byte-compile-file (expand-file-name "early-init.el"
                                          user-emacs-directory))
     (byte-compile-file (expand-file-name "init.el"
-                                          user-emacs-directory))
+                                         user-emacs-directory))
     (org-babel-tangle-file (expand-file-name "window-manager.org"
                                              user-emacs-directory)
                            "emacs-lisp")
@@ -70,13 +92,16 @@ Inserted by installing org-mode or when a release is made."
                                          user-emacs-directory))))
 
 (use-package exec-path-from-shell
+  :custom
+  (exec-path-from-shell-arguments   nil)
+  (exec-path-from-shell-shell-name "/bin/sh")
   :config
   (exec-path-from-shell-initialize))
 
 (use-package no-littering
   :ensure t)
 
-(with-eval-after-load "no-littering"
+(with-eval-after-load 'no-littering
   (let ((base-custom-file (expand-file-name "custom" no-littering-etc-directory)))
     (setq-default custom-file (concat base-custom-file ".el"))
     (load base-custom-file t)))
@@ -130,11 +155,11 @@ Inserted by installing org-mode or when a release is made."
       (when (and (boundp projectile-project-root)
                  (projectile-project-root))
         (propertize (projectile-project-name)
-          'local-map (let ((map (make-sparse-keymap)))
-                       (define-key map [mode-line down-mouse-1]
+                    'local-map (let ((map (make-sparse-keymap)))
+                                 (define-key map [mode-line down-mouse-1]
                                    projectile-mode-menu)
-                        map)
-          'mouse-face 'mode-line-highlight)))
+                                 map)
+                    'mouse-face 'mode-line-highlight)))
 
 
     (defun mkyle/spaceline-reset ()
@@ -145,46 +170,46 @@ Inserted by installing org-mode or when a release is made."
     (defun mkyle/spaceline-theme (&rest additional-segments)
       "Spaceline emacs theme with some tweaks"
       (spaceline-compile
-       `((((((persp-name :fallback workspace-number) window-number)
-            :separator "•")
-           buffer-modified
-           buffer-size)
-          :face highlight-face
-          :priority 100)
-         (anzu :priority 95)
-         auto-compile
-         ((buffer-id remote-host)
-          :priority 98)
-         (major-mode :priority 79)
-         (process :when active)
-         ((flycheck-error flycheck-warning flycheck-info)
-          :when active
-          :priority 89)
-         (minor-modes :when active
-                      :priority 9)
-         (mu4e-alert-segment :when active)
-         (erc-track :when active)
-         (version-control :when active
-                          :priority 78)
-         (mkyle/projectile :priority 20)
-         (org-pomodoro :when active)
-         (org-clock :when active)
-         nyan-cat)
-       `(which-function
-         (python-pyvenv :fallback python-pyenv)
-         (purpose :priority 94)
-         (battery :when active)
-         (selection-info :priority 95)
-         input-method
-         ((point-position line-column)
-          :separator " • "
-          :priority 96)
-         ((buffer-encoding-abbrev)
-          :priority 9)
-         (global :when active)
-         ,@additional-segments
-         (buffer-position :priority 99)
-         (hud :priority 99)))
+        `((((((persp-name :fallback workspace-number) window-number)
+             :separator "•")
+            buffer-modified
+            buffer-size)
+           :face highlight-face
+           :priority 100)
+          (anzu :priority 95)
+          auto-compile
+          ((buffer-id remote-host)
+           :priority 98)
+          (major-mode :priority 79)
+          (process :when active)
+          ((flycheck-error flycheck-warning flycheck-info)
+           :when active
+           :priority 89)
+          (minor-modes :when active
+                       :priority 9)
+          (mu4e-alert-segment :when active)
+          (erc-track :when active)
+          (version-control :when active
+                           :priority 78)
+          (mkyle/projectile :priority 20)
+          (org-pomodoro :when active)
+          (org-clock :when active)
+          nyan-cat)
+        `(which-function
+          (python-pyvenv :fallback python-pyenv)
+          (purpose :priority 94)
+          (battery :when active)
+          (selection-info :priority 95)
+          input-method
+          ((point-position line-column)
+           :separator " • "
+           :priority 96)
+          ((buffer-encoding-abbrev)
+           :priority 9)
+          (global :when active)
+          ,@additional-segments
+          (buffer-position :priority 99)
+          (hud :priority 99)))
       (setq-default mode-line-format
                     '("%e" (:eval (spaceline-ml-main)))))
 
@@ -197,16 +222,16 @@ Inserted by installing org-mode or when a release is made."
 (when (member "Symbola" (font-family-list))
   (set-fontset-font t 'unicode "Symbola" nil 'prepend))
 
-(when (and window-system
-           (member "Noto Color Emoji" (font-family-list)))
-  (set-fontset-font t 'unicode "Noto Color Emoji" nil 'prepend)
+(use-package emojify
+  :init (defvar emojify-display-style 'unicode))
 
-  (defvar emojify-display-style)
-  (use-package emojify
-    :init (setq emojify-display-style 'unicode)))
+(setq inhibit-startup-screen            t
+      initial-scratch-message           nil)
 
-(setq inhibit-startup-screen  t
-      initial-scratch-message nil)
+;; Display a fortune instead of the welcome to emacs message
+(defun display-startup-echo-area-message ()
+  (when (executable-find "fortune")
+    (message "%s" (substring (shell-command-to-string "fortune -sa") 0 -1))))
 
 (setq-default large-file-warning-threshold 104857600)
 
@@ -214,7 +239,9 @@ Inserted by installing org-mode or when a release is made."
   :diminish which-key-mode
   :config (which-key-mode +1))
 
-(defadvice server-visit-files (before parse-numbers-in-lines (files proc &optional nowait) activate)
+(defadvice server-visit-files (before parse-numbers-in-lines
+                                      (files proc &optional nowait)
+                                      activate)
   "Open file with emacsclient with cursors positioned on requested line.
 Most of console-based utilities prints filename in format
 'filename:linenumber'.  So you may wish to open filename in that format.
@@ -230,11 +257,11 @@ to open 'filename' and set the cursor on line 'linenumber'."
                                "^\\(.*?\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?$"
                                name)
                               (cons
-                                (match-string 1 name)
-                                (cons (string-to-number (match-string 2 name))
-                                      (string-to-number
-                                       (or (match-string 3 name)
-                                           ""))))
+                               (match-string 1 name)
+                               (cons (string-to-number (match-string 2 name))
+                                     (string-to-number
+                                      (or (match-string 3 name)
+                                          ""))))
                             fn)))
                       files)))
 
@@ -256,13 +283,6 @@ to open 'filename' and set the cursor on line 'linenumber'."
 
 (use-package savehist
   :config (savehist-mode 1))
-
-(use-package smex
-  :after ido
-  :bind (:map global-map
-         ("M-x" . smex)
-         ("M-X" . smex-major-mode-commands))
-  :config (smex-initialize))
 
 (defun mkyle/split-window (&optional window)
   "Split window more senibly.  WINDOW."
@@ -301,7 +321,7 @@ to open 'filename' and set the cursor on line 'linenumber'."
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
-(with-eval-after-load "ibuffer"
+(with-eval-after-load 'ibuffer
   (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode))
 
 (use-package ibuffer
@@ -312,11 +332,11 @@ to open 'filename' and set the cursor on line 'linenumber'."
   :config
   ;; increase buffer name column width
   (setq ibuffer-formats '((mark modified read-only " "
-                           ;; 40 40 is the column width
-                           (name 40 40 :left :elide) " "
-                           (size 9 -1 :right) " "
-                           (mode 8 8 :left :elide) " "
-                           filename-and-process)
+                                ;; 40 40 is the column width
+                                (name 40 40 :left :elide) " "
+                                (size 9 -1 :right) " "
+                                (mode 8 8 :left :elide) " "
+                                filename-and-process)
                           (mark " " (name 16 -1) " " filename))))
 
 (use-package ibuffer-dynamic-groups
@@ -325,38 +345,59 @@ to open 'filename' and set the cursor on line 'linenumber'."
                                     :host github
                                     :repo "mitch-kyle/ibuffer-dynamic-groups")
   :config (progn
-           (setq ibuffer-show-empty-filter-groups nil)
-           (ibuffer-dynamic-groups-add
-            (lambda (groups)
-              (append groups
-                      '(("System" (name . "^\\*.*\\*$")))))
-            '((name . system-group)))
-           (ibuffer-dynamic-groups t)))
+            (setq ibuffer-show-empty-filter-groups nil)
+            (ibuffer-dynamic-groups-add
+             (lambda (groups)
+               (append groups
+                       '(("System" (name . "^\\*.*\\*$")))))
+             '((name . system-group)))
+            (ibuffer-dynamic-groups t)))
 
-;; TODO Lookup why this is needed
-(defvar personal-keybindings nil)
-(use-package ido
+(use-package smex) ;; Completion History
+
+(use-package ivy
+  :straight (swiper :type git
+                    :host github
+                    :repo "abo-abo/swiper"
+                    :files (:defaults (:exclude "ivy-hydra.el")))
+  :ensure t
+  :after smex
+  :diminish (counsel-mode ivy-mode)
+  :init (setq ivy-use-virtual-buffers       nil
+              enable-recursive-minibuffers  t
+              ;; Enable fuzzy matching except in swiper
+              ivy-re-builders-alist         '((t      . ivy--regex-ignore-order)
+                                              (swiper . ivy--regex-plus))
+              ivy-wrap                      t
+              ivy-use-selectable-prompt     t
+              projectile-completion-system  'ivy
+              ivy-initial-inputs-alist      nil
+              ivy-count-format              "%d/%d ")
+  :bind (:map ivy-mode-map
+              ("C-c C-r" . ivy-resume)
+              :map global-map
+              ("C-s" . swiper)
+              :map ivy-minibuffer-map
+              ("<return>"   . ivy-alt-done) ;; Complete directory like ido
+              ("M-<return>" . ivy-done))
   :config
-  (progn
-    (setq ido-enable-prefix                      nil
-          ido-enable-flex-matching               t
-          ido-create-new-buffer                  'always
-          ido-use-filename-at-point              'guess
-          ido-max-prospects                      10
-          ido-default-file-method                'selected-window
-          ido-auto-merge-work-directories-length -1)
-    (ido-mode +1)))
+  ;; Remove the org-mode face that messes up formatting
+  (setq ivy-switch-buffer-faces-alist
+        (assq-delete-all 'org-mode ivy-switch-buffer-faces-alist)))
 
-(use-package ido-completing-read+
-  :after ido
-  :config (ido-ubiquitous-mode +1))
+;; Add info to ivy buffer
+(use-package ivy-rich
+  :ensure t
+  :after ivy
+  :config (ivy-rich-mode +1))
 
-;; smarter fuzzy matching for ido
-(use-package flx-ido
-  :after ido
-  :config (progn (flx-ido-mode +1)
-                 ;; disable ido faces to see flx highlights
-                 (setq ido-use-faces nil)))
+;; Something is enabling ido at startup and I can't find it
+;; so hack is off after startup
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (counsel-mode +1)
+            (ivy-mode +1)
+            (ido-mode -1)))
 
 (windmove-default-keybindings)
 
@@ -374,7 +415,7 @@ to open 'filename' and set the cursor on line 'linenumber'."
 
 (setq-default create-lockfiles nil)
 
-(with-eval-after-load "no-littering"
+(with-eval-after-load 'no-littering
   (setq-default auto-save-file-name-transforms
                 `((".*" ,no-littering-var-directory t))))
 
@@ -389,7 +430,7 @@ to open 'filename' and set the cursor on line 'linenumber'."
   :config
   (progn
     (setq ibuffer-projectile-prefix "- ")
-    (with-eval-after-load "ibuffer-dynamic-groups"
+    (with-eval-after-load 'ibuffer-dynamic-groups
       (ibuffer-dynamic-groups-add
        (lambda (groups)
          (append (ibuffer-projectile-generate-filter-groups)
@@ -450,8 +491,8 @@ to open 'filename' and set the cursor on line 'linenumber'."
 
 (use-package yasnippet
   :bind (:map yas-minor-mode-map
-         ("C-`" . yas-expand)
-         ("C-/" . yas-insert-snippet))
+              ("C-`" . yas-expand)
+              ("C-/" . yas-insert-snippet))
   :commands yas-minor-mode)
 
 (use-package yasnippet-snippets
@@ -466,25 +507,20 @@ to open 'filename' and set the cursor on line 'linenumber'."
     "Toggle off window transparency"
     (interactive)
     (set-frame-parameter nil 'alpha
-      (if (eql (car (frame-parameter nil 'alpha))
-               100)
-          '(95 . 95)
-        '(100 . 100))))
-
+                         (if (eql (car (frame-parameter nil 'alpha))
+                                  100)
+                             '(95 . 95)
+                           '(100 . 100))))
   (set-frame-parameter nil 'alpha '(95 . 95))
-
   ;; Make new frame transparent because we don't always inherit
   (add-to-list 'after-make-frame-functions
                (lambda (&rest _)
                  (set-frame-parameter nil 'alpha '(95 . 95)))))
 
-(use-package toc-org
-  :after org
-  :hook ((org-mode) . toc-org-mode))
-
 (use-package eldoc
   :diminish eldoc-mode
-  :hook ((emacs-lisp-mode) . eldoc-mode))
+  :hook ((emacs-lisp-mode) . eldoc-mode)
+  :config (global-eldoc-mode +1))
 
 (use-package auto-compile
   :config
@@ -515,7 +551,7 @@ to open 'filename' and set the cursor on line 'linenumber'."
 
             (define-key cider-mode-map (kbd "C-c f") 'cider-find-var)
 
-            (with-eval-after-load "ibuffer-dynamic-groups"
+            (with-eval-after-load 'ibuffer-dynamic-groups
               (ibuffer-dynamic-groups-add
                (lambda (groups)
                  (append '(("Cider" (or (name . "^\\*nrepl-.*\\*$")
@@ -572,9 +608,9 @@ to open 'filename' and set the cursor on line 'linenumber'."
     (add-hook 'sh-mode-hook
               (lambda ()
                 (when
-                  (and buffer-file-name
-                       (member (file-name-nondirectory buffer-file-name)
-                               zsh-files))
+                    (and buffer-file-name
+                         (member (file-name-nondirectory buffer-file-name)
+                                 zsh-files))
                   (sh-set-shell "zsh"))))))
 
 (use-package terraform-mode
@@ -592,7 +628,7 @@ to open 'filename' and set the cursor on line 'linenumber'."
 (use-package magit
   :defer t
   :bind (:map global-map
-         ("C-x g" . magit-status)))
+              ("C-x g" . magit-status)))
 
 (use-package git-modes
   :defer t)
@@ -664,56 +700,68 @@ to open 'filename' and set the cursor on line 'linenumber'."
       (erc-spelling-mode 1))))
 
 (use-package persistent-scratch
-  :commands (persistent-scratch-restore
-             persistent-scratch-autosave-mode
-             persistent-scratch-mode)
+  :ensure t
   :diminish persistent-scratch-mode
   :config
   (progn
     (persistent-scratch-setup-default)
-    (persistent-scratch-restore)))
+    (persistent-scratch-autosave-mode +1)))
+
+(with-current-buffer "*scratch*"
+  (persistent-scratch-mode +1))
 
 (defun mkyle/scratch ()
   "Get or create the scratch buffer"
   (interactive)
   (unless (get-buffer "*scratch*")
-    (persistent-scratch-restore))
-  (switch-to-buffer (get-buffer "*scratch*"))
-  (lisp-interaction-mode)
-  (persistent-scratch-mode +1)
-  (persistent-scratch-autosave-mode +1))
+    (persistent-scratch-restore)
+    (with-current-buffer "*scratch*"
+      (persistent-scratch-mode +1)))
+  (let ((buf (get-buffer "*scratch*")))
+    (if (eq buf (current-buffer))
+        (bury-buffer)
+      (switch-to-buffer buf))))
 
 (global-set-key (kbd "s-x s") 'mkyle/scratch)
 
 (use-package vterm
   :commands (vterm)
   :init (setq vterm-always-compile-module t
-              vterm-buffer-name-string    "*vterm* %s")
+              vterm-buffer-name-string    "*vterm* %s"
+              vterm-copy-mode-map
+              (let ((map (make-sparse-keymap)))
+                (define-key map (kbd "q")       'vterm-copy-mode-done)
+                (define-key map (kbd "c")       'vterm-copy-mode-done)
+                (define-key map (kbd "C-c C-c") 'vterm-copy-mode-done)
+                (define-key map [return]        'vterm-copy-mode-done)
+                (define-key map (kbd "RET")     'vterm-copy-mode-done)
+                (define-key map (kbd "r")       'vterm-reset-cursor-point)
+                (define-key map (kbd "a")       'vterm-beginning-of-line)
+                (define-key map (kbd "e")       'vterm-end-of-line)
+                (define-key map (kbd "n")       'vterm-next-prompt)
+                (define-key map (kbd "p")       'vterm-previous-prompt)
+                map))
   :config
   (progn
-    (define-key vterm-copy-mode-map (kbd "C-c C-c") 'copy-region-as-kill)
     ;; even with this hack it doesn't handle cua-mode very well
     (add-hook 'vterm-mode-hook (lambda ()
                                  (linum-mode -1)
-                                 (make-local-variable 'cua-enable-cua-keys)
-                                 (setq cua-enable-cua-keys nil)
+                                 (setq-local cua-enable-cua-keys nil)
                                  (local-set-key (kbd "C-v") 'vterm-yank)
                                  (local-set-key (kbd "C-z") 'vterm-undo)))
 
-    (with-eval-after-load "ibuffer-dynamic-groups"
+    (with-eval-after-load 'ibuffer-dynamic-groups
       (ibuffer-dynamic-groups-add (lambda (groups)
                                     (append '(("Terminals" (mode . vterm-mode)))
                                             groups))
-                                 '((name . vterm-group)
-                                   (depth . -9))))))
+                                  '((name . vterm-group)
+                                    (depth . -9))))))
 
 (defun mkyle/vterm-execute (command)
   "Start a vterm session with the given command"
-   (interactive (list (read-shell-command "$ ")))
-   (let ((vterm-shell command))
-     (vterm)))
-
-(global-set-key (kbd "s-!") #'mkyle/vterm-execute)
+  (interactive (list (read-shell-command "$ ")))
+  (let ((vterm-shell command))
+    (vterm)))
 
 (use-package vtplex
   :straight (vtplex :type   git
@@ -721,9 +769,10 @@ to open 'filename' and set the cursor on line 'linenumber'."
                     :repo   "mitch-kyle/vtplex"
                     :branch "main")
   :after vterm
-  :commands (vtplex vtplex-mode)
+  :commands (vtplex vtplex-mode vtplex-execute)
   :bind (:map global-map
-         ("s-<return>" . vtplex))
+              ("s-<return>" . vtplex)
+              ("s-!" .        vtplex-execute))
   :config
   (progn (require 'vtplex-spaceline)
          (vtplex-spaceline-enable 'mkyle/projectile)))
@@ -751,7 +800,7 @@ invoking `create-new'."
 
 (defun mkyle/volume ()
   (interactive)
-   (mkyle/labeled-buffer 'mkyle/volume
+  (mkyle/labeled-buffer 'mkyle/volume
                         (lambda ()
                           (let ((vterm-shell (if (executable-find "pulsemixer")
                                                  "pulsemixer"
@@ -807,8 +856,18 @@ invoking `create-new'."
   :defer t
   :config
   (require 'window-manager
-           (expand-file-name "window-manager.el"
+           (expand-file-name "window-manager.elc"
                              user-emacs-directory)
-            t))
+           t))
+
+(defvar mkyle/user-lisp-directory
+  (expand-file-name "lisp"
+                    user-emacs-directory)
+  "All emacs lisp files in this directory will be loaded during initialization. default is ~/.emacs.d/lisp.")
+
+(use-package load-directory
+  :config
+  (when (file-directory-p mkyle/user-lisp-directory)
+    (load-directory mkyle/user-lisp-directory t)))
 
 ;; init.el ends here

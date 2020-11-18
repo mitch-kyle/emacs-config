@@ -7,15 +7,12 @@
 (require 'exwm-config)
 (require 'server)
 
-(if (require 'ido nil t)
-    (progn (exwm-input-set-key (kbd "s-x b") #'ido-switch-buffer)
-           (exwm-config-ido))
-  (exwm-config-default))
+(exwm-config-example)
+(exwm-enable)
+
 
 (unless (server-running-p)
   (server-start))
-
-(exwm-enable)
 
 (require 'exwm-randr)
 (defun wm/xrandr-update-outputs ()
@@ -36,9 +33,7 @@
         (setq i (1+ i)))
       (setq exwm-randr-workspace-monitor-plist (reverse result)))
     (while (> n-monitors (exwm-workspace--count))
-      (exwm-workspace-add))
-    (while (< n-monitors (exwm-workspace--count))
-      (exwm-workspace-delete (- (exwm-workspace--count) 1)))))
+      (exwm-workspace-add))))
 
 (defun wm/xrandr-init ()
   (add-hook 'exwm-randr-screen-change-hook 'wm/xrandr-update-outputs)
@@ -62,7 +57,7 @@
     (defun mkyle/windmove-framemove-hook (f dir &optional arg window)
       "Hook windmove to framemove properly"
       (condition-case nil
-        (funcall f dir arg window)
+          (funcall f dir arg window)
         ('error (fm-next-frame dir))))
 
     (advice-add 'windmove-do-window-select
@@ -80,10 +75,10 @@
 (defun wm/rename-buffer ()
   (interactive)
   (exwm-workspace-rename-buffer
-    (concat exwm-class-name ": "
-            (if (<= (length exwm-title) 50)
-                exwm-title
-              (concat (substring exwm-title 0 49) "...")))))
+   (concat exwm-class-name ": "
+           (if (<= (length exwm-title) 50)
+               exwm-title
+             (concat (substring exwm-title 0 49) "...")))))
 
 (add-hook 'exwm-update-class-hook 'wm/rename-buffer)
 (add-hook 'exwm-update-title-hook 'wm/rename-buffer)
@@ -109,21 +104,24 @@
 (require 'seq)
 
 (defun wm/browser ()
+  "Run, raise, or bury browser window"
   (interactive)
-  (let ((buf (seq-find (lambda (buffer)
-                         (with-current-buffer buffer
-                           (and (eq major-mode 'exwm-mode)
-                                (string= exwm-class-name "firefox")
-                                buffer)))
-                       (buffer-list))))
-    (if (and buf (buffer-live-p buf))
-        (switch-to-buffer buf)
-      (start-process-shell-command "" nil "firefox"))))
+  (if-let (buf (seq-find (lambda (buffer)
+                           (with-current-buffer buffer
+                             (and (eq major-mode 'exwm-mode)
+                                  (string= exwm-class-name "firefox")
+                                  (buffer-live-p buffer)
+                                  buffer)))
+                         (buffer-list)))
+      (if (equal buf (current-buffer))
+          (bury-buffer)
+        (switch-to-buffer buf))
+    (start-process-shell-command "firefox" nil "firefox")))
 
 (defun wm/scrot ()
   (interactive)
   (start-process-shell-command "" nil
-   "scrot --select --exec 'mv $f ~/Pictures/screenshots'"))
+                               "scrot --select --exec 'mv $f ~/Pictures/screenshots'"))
 
 (defun wm/lock ()
   (interactive)
@@ -181,5 +179,6 @@
 (setq-default exwm-input-simulation-keys
               '(([?\C-s] . [?\C-f])))
 
+(exwm-enable)
 (provide 'window-manager)
 ;;; window-manager.el ends here

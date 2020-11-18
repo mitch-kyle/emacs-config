@@ -7,15 +7,17 @@
       gc-cons-percentage 0.6)
 
 (add-hook 'emacs-startup-hook
-  (lambda ()
-    (setq gc-cons-threshold  33554432 ;32M
-          gc-cons-percentage 0.1)))
+          (lambda ()
+            (setq gc-cons-threshold  33554432 ;32M
+                  gc-cons-percentage 0.1)))
 
 (let ((saved-file-name-handler-alist file-name-handler-alist))
   (setq file-name-handler-alist nil)
   (add-hook 'emacs-startup-hook
-    (lambda ()
-      (setq file-name-handler-alist (append saved-file-name-handler-alist file-name-handler-alist)))))
+            (lambda ()
+              (setq file-name-handler-alist
+                    (append saved-file-name-handler-alist
+                            file-name-handler-alist)))))
 
 (menu-bar-mode -1)
 (tool-bar-mode -1)

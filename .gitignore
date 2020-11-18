@@ -6,3 +6,4 @@ straight/*
 !straight/versions
 var
 eshell
+notes
