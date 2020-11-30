@@ -274,7 +274,7 @@ to open 'filename' and set the cursor on line 'linenumber'."
       scroll-conservatively           100000
       scroll-preserve-screen-position 1)
 
-(global-linum-mode t)
+(global-display-line-numbers-mode t)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
@@ -469,11 +469,9 @@ to open 'filename' and set the cursor on line 'linenumber'."
                                   100)
                              '(95 . 95)
                            '(100 . 100))))
-  (set-frame-parameter nil 'alpha '(95 . 95))
-  ;; Make new frame transparent because we don't always inherit
-  (add-to-list 'after-make-frame-functions
-               (lambda (&rest _)
-                 (set-frame-parameter nil 'alpha '(95 . 95)))))
+
+  (add-to-list 'default-frame-alist '(alpha . (95 . 95)))
+  (set-frame-parameter nil 'alpha '(95 . 95)))
 
 (use-package eldoc
   :diminish eldoc-mode
@@ -703,7 +701,7 @@ to open 'filename' and set the cursor on line 'linenumber'."
   (progn
     ;; even with this hack it doesn't handle cua-mode very well
     (add-hook 'vterm-mode-hook (lambda ()
-                                 (linum-mode -1)
+                                 (display-line-numbers-mode -1)
                                  (setq-local cua-enable-cua-keys nil)
                                  (local-set-key (kbd "C-v") 'vterm-yank)
                                  (local-set-key (kbd "C-z") 'vterm-undo)))

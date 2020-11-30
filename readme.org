@@ -564,7 +564,7 @@ Maintain cursor position when scrolling
 *** Line Numbers
 Always show line numbers
 #+BEGIN_SRC emacs-lisp :tangle init.el
-(global-linum-mode t)
+(global-display-line-numbers-mode t)
 #+END_SRC
 
 ** Navigation
@@ -877,11 +877,9 @@ I like the "glass editing window" effect. This sets it that way by default and g
                                   100)
                              '(95 . 95)
                            '(100 . 100))))
-  (set-frame-parameter nil 'alpha '(95 . 95))
-  ;; Make new frame transparent because we don't always inherit
-  (add-to-list 'after-make-frame-functions
-               (lambda (&rest _)
-                 (set-frame-parameter nil 'alpha '(95 . 95)))))
+
+  (add-to-list 'default-frame-alist '(alpha . (95 . 95)))
+  (set-frame-parameter nil 'alpha '(95 . 95)))
 #+END_SRC
 
 * Language Specific Packages
@@ -1271,7 +1269,7 @@ vterm is an integrated terminal emulator using modules.
   (progn
     ;; even with this hack it doesn't handle cua-mode very well
     (add-hook 'vterm-mode-hook (lambda ()
-                                 (linum-mode -1)
+                                 (display-line-numbers-mode -1)
                                  (setq-local cua-enable-cua-keys nil)
                                  (local-set-key (kbd "C-v") 'vterm-yank)
                                  (local-set-key (kbd "C-z") 'vterm-undo)))
